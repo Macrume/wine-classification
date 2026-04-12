@@ -1,0 +1,38 @@
+\section{Koncepcja realizacji sieci neuronowej}
+
+Do rozwiązania rozważanego zadania proponuje się zastosowanie wielowarstwowej sieci perceptronowej MLP o następującej strukturze:
+\begin{itemize}
+    \item warstwa wejściowa -- 13 neuronów,
+    \item jedna warstwa ukryta -- 9 neuronów,
+    \item warstwa wyjściowa -- 3 neurony.
+\end{itemize}
+
+Przyjęta architektura może zostać zapisana w postaci:
+\[
+13 \rightarrow 9 \rightarrow 3.
+\]
+
+Liczba neuronów w warstwie wejściowej wynika bezpośrednio z liczby cech opisujących próbkę. Warstwa wyjściowa zawiera trzy neurony, ponieważ zadanie obejmuje rozróżnienie trzech klas win. Zastosowanie jednej warstwy ukrytej o 9 neuronach stanowi kompromis pomiędzy zdolnością modelu do reprezentowania nieliniowych zależności a ograniczeniem ryzyka przeuczenia, które w przypadku danego zbioru danych jest istotne.
+
+W warstwie ukrytej proponuje się zastosowanie funkcji aktywacji ReLU:
+\[
+f(x) = \max(0, x).
+\]
+Funkcja ta jest prosta obliczeniowo oraz dobrze sprawdza się w zadaniach klasyfikacyjnych. W warstwie wyjściowej proponuje się zastosowanie funkcji softmax, która pozwala interpretować odpowiedzi sieci jako prawdopodobieństwa przynależności do poszczególnych klas.
+
+Proces uczenia sieci będzie realizowany z wykorzystaniem algorytmu propagacji wstecznej błędu. W każdej iteracji najpierw wykonywana będzie propagacja w przód, polegająca na obliczeniu odpowiedzi sieci dla danych wejściowych. Następnie wynik działania sieci zostanie porównany z rzeczywistą etykietą klasy, co umożliwi wyznaczenie wartości funkcji kosztu. Na tej podstawie obliczone zostaną gradienty błędu względem wag i biasów, a następnie parametry sieci zostaną zaktualizowane w taki sposób, aby zmniejszyć błąd klasyfikacji w kolejnych iteracjach.
+
+Jako funkcję kosztu proponuje się zastosowanie funkcji cross-entropy. Wybór ten wynika z faktu, że rozważane zadanie ma charakter klasyfikacji wieloklasowej, a warstwa wyjściowa sieci wykorzystuje funkcję softmax. Połączenie softmax i cross-entropy jest standardowym rozwiązaniem w tego typu problemach, ponieważ pozwala skutecznie mierzyć różnicę pomiędzy prawidłową klasą a prawdopodobieństwami wyznaczonymi przez sieć. Dzięki temu możliwe jest efektywne korygowanie parametrów modelu podczas uczenia.
+
+Do aktualizacji wag proponuje się zastosowanie algorytmu Adam (\textit{Adaptive Moment Estimation}), który stanowi rozszerzenie metody gradientowej wykorzystujące adaptacyjne współczynniki uczenia wyznaczane na podstawie oszacowań pierwszego i drugiego momentu gradientu. W praktyce oznacza to, że model może być uczony efektywniej i stabilniej niż w przypadku klasycznego stochastic  gradient descent, przy jednoczesnym zachowaniu zalet uczenia na niewielkich partiach danych. Zastosowanie algorytmu Adam jest szczególnie uzasadnione w przypadku niewielkich sieci neuronowych oraz danych o zróżnicowanych zakresach wartości cech, ponieważ metoda ta zwykle przyspiesza zbieżność procesu uczenia i ogranicza konieczność ręcznego dostrajania parametrów optymalizacji.
+
+Jako początkowe parametry procesu uczenia proponuje się przyjąć:
+\begin{itemize}
+    \item współczynnik uczenia $\eta = 0{,}001$,
+    \item rozmiar partii danych (\textit{batch size}) równy 16,
+    \item liczbę epok z zakresu od 100 do 150.
+\end{itemize}
+
+Przyjęcie współczynnika uczenia na poziomie $0{,}001$ jest zgodne z typowymi ustawieniami początkowymi dla algorytmu Adam i stanowi rozsądny kompromis pomiędzy szybkością uczenia a stabilnością zmian parametrów. Zbyt duża wartość mogłaby prowadzić do niestabilnego przebiegu optymalizacji, natomiast zbyt mała spowalniałaby proces dochodzenia do rozwiązania. Rozmiar partii równy 16 jest odpowiedni dla stosunkowo niewielkiego zbioru danych i pozwala na sprawne wykonywanie obliczeń przy zachowaniu stabilności uczenia. Liczbę epok z zakresu 100--150 przyjęto jako wystarczającą do wstępnego nauczenia niewielkiej sieci MLP dla analizowanego problemu, przy jednoczesnym ograniczeniu ryzyka nadmiernego dopasowania do danych treningowych.
+
+Wagi sieci proponuje się zainicjalizować małymi losowymi wartościami, aby uniknąć sytuacji, w której wszystkie neurony rozpoczynają uczenie od identycznych parametrów. Biasy mogą zostać zainicjalizowane wartościami zerowymi. Przyjęte ustawienia mają charakter początkowej propozycji i mogą zostać skorygowane w dalszym etapie projektu na podstawie wyników uzyskanych podczas eksperymentów.

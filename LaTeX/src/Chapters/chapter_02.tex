@@ -1,0 +1,15 @@
+\section{Proponowana metoda wstępnego przetwarzania danych}
+
+Pierwszym etapem przetwarzania będzie rozdzielenie zbioru danych na macierz cech wejściowych $X$ oraz wektor etykiet klas $y$. Do macierzy $X$ trafi 13 cech opisujących próbkę wina, natomiast do wektora $y$ przypisana zostanie informacja o klasie.
+
+Ponieważ wszystkie cechy wejściowe są liczbowe, nie ma potrzeby kodowania danych nienumerycznych.
+
+Najważniejszym etapem wstępnego przetwarzania będzie skalowanie danych wejściowych. Z przeprowadzonej analizy wynika, że poszczególne cechy mają różne zakresy wartości, dlatego proponuje się zastosowanie standaryzacji zgodnie ze wzorem:
+\[
+x' = \frac{x - \mu}{\sigma},
+\]
+gdzie $\mu$ oznacza średnią, a $\sigma$ odchylenie standardowe danej cechy.
+
+Parametry standaryzacji powinny zostać wyznaczone wyłącznie na zbiorze treningowym, a następnie wykorzystane również do przeskalowania zbioru testowego.
+
+W analizowanym zbiorze nie stwierdzono braków danych, dlatego nie ma konieczności stosowania metod imputacji. Zidentyfikowane na wykresach obserwacje odstające nie będą usuwane automatycznie, ponieważ zbiór jest stosunkowo mały, a usuwanie takich obserwacji mogłoby prowadzić do utraty istotnych informacji.

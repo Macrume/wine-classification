@@ -3,8 +3,8 @@
 
 % -----------------PREAMBUŁA-----------------
 \input{preamble/packages.tex}
-\input{preamble/definitions.tex}
 \input{preamble/formating.tex}
+\input{preamble/definitions.tex}
 % -------------------------------------------
 
 \title{\ProjectNumber. \ProjectTitle}
@@ -15,117 +15,24 @@
     \begin{titlepage}
        \maketitle
     \end{titlepage}
-\section{Analiza zbioru danych}
+     \clearpage
 
-Rozpatrywany zbiór danych pochodzi z repozytorium UCI Machine Learning Repository i dotyczy klasyfikacji win na podstawie ich właściwości chemicznych. Zbiór zawiera 178 próbek. Każda próbka opisana jest za pomocą 13 cech wejściowych oraz jednej zmiennej docelowej określającej klasę wina. Jest to klasyfikacji wieloklasowej z trzema klasami.
+    \tableofcontents
+    \clearpage
 
-Liczebności klas w analizowanym zbiorze wynoszą odpowiednio:
-\begin{itemize}
-    \item klasa 1 -- 59 próbek,
-    \item klasa 2 -- 71 próbek,
-    \item klasa 3 -- 48 próbek.
-\end{itemize}
+    \listoftables
+    \clearpage
 
-\subsection{Cechy wejściowe}
+    \listoffigures
+    \clearpage
 
-Wektor wejściowy zawiera następujące cechy:
-\begin{itemize}
-    \item Alcohol,
-    \item Malic acid,
-    \item Ash,
-    \item Alcalinity of ash,
-    \item Magnesium,
-    \item Total phenols,
-    \item Flavanoids,
-    \item Nonflavanoid phenols,
-    \item Proanthocyanins,
-    \item Color intensity,
-    \item Hue,
-    \item OD280/OD315 of diluted wines,
-    \item Proline.
-\end{itemize}
+    \input{chapters/chapter_01.tex}
+    \input{chapters/chapter_02.tex}
+    \input{chapters/chapter_03.tex}
+    \input{chapters/chapter_04.tex}
+    \input{chapters/chapter_05.tex}
+    \clearpage
+    \appendix
+    \input{chapters/appendix_a.tex}
 
-Zmienną docelową jest kolumna \texttt{Target}, określająca przynależność próbki do jednej z trzech klas.
-
-\subsection{Wyniki analizy wstępnej}
-
-W ramach analizy danych wyznaczono podstawowe statystyki opisowe dla wszystkich cech, takie jak średnia, wartość minimalna, wartość maksymalna, odchylenie standardowe, mediana, kwartyle oraz rozstęp międzykwartylowy. Statystyki zostały obliczone zarówno dla całego zbioru, jak i osobno dla klas 1, 2 i 3. Dodatkowo wykonano histogramy rozkładów cech, wykresy pudełkowe, macierz korelacji oraz wykresy typu pairplot dla wybranych cech.
-
-Na podstawie przeprowadzonej analizy stwierdzono, że:
-\begin{itemize}
-    \item wszystkie cechy wejściowe mają charakter numeryczny,
-    \item w zbiorze nie występują braki danych,
-    \item poszczególne cechy mają istotnie różne zakresy wartości,
-    \item rozkłady części cech różnią się pomiędzy klasami, co potwierdza zasadność zastosowania klasyfikatora,
-    \item cechy takie jak \textit{Flavanoids}, \textit{OD280/OD315 of diluted wines}, \textit{Total phenols}, \textit{Proline} oraz \textit{Hue} wykazują dobrą zdolność rozróżniania klas.
-\end{itemize}
-
-Wyniki analizy wskazują, że zbiór danych jest odpowiedni do zastosowania wielowarstwowej sieci perceptronowej MLP, jednak przed podaniem danych na wejście sieci konieczne jest ich odpowiednie przygotowanie.
-
-\section{Proponowana metoda wstępnego przetwarzania danych}
-
-Pierwszym etapem przetwarzania będzie rozdzielenie zbioru danych na macierz cech wejściowych $X$ oraz wektor etykiet klas $y$. Do macierzy $X$ trafi 13 cech opisujących próbkę wina, natomiast do wektora $y$ przypisana zostanie informacja o klasie.
-
-Ponieważ wszystkie cechy wejściowe są liczbowe, nie ma potrzeby kodowania danych nienumerycznych.
-
-Najważniejszym etapem wstępnego przetwarzania będzie skalowanie danych wejściowych. Z przeprowadzonej analizy wynika, że poszczególne cechy mają różne zakresy wartości, dlatego proponuje się zastosowanie standaryzacji zgodnie ze wzorem:
-\[
-x' = \frac{x - \mu}{\sigma},
-\]
-gdzie $\mu$ oznacza średnią, a $\sigma$ odchylenie standardowe danej cechy.
-
-Parametry standaryzacji powinny zostać wyznaczone wyłącznie na zbiorze treningowym, a następnie wykorzystane również do przeskalowania zbioru testowego.
-
-W analizowanym zbiorze nie stwierdzono braków danych, dlatego nie ma konieczności stosowania metod imputacji. Zidentyfikowane na wykresach obserwacje odstające nie będą usuwane automatycznie, ponieważ zbiór jest stosunkowo mały, a usuwanie takich obserwacji mogłoby prowadzić do utraty istotnych informacji.
-
-\section{Proponowany podział zbioru danych}
-
-Proponuje się podział zbioru danych na część treningową i testową w proporcji 80\% do 20\%. Oznacza to, że 142 próbek zostanie przeznaczonych do uczenia modelu, a 36 próbek do jego końcowej oceny.
-
-Podział powinien zostać wykonany w sposób losowy, ale z zachowaniem proporcji klas w obu częściach zbioru. Takie podejście jest uzasadnione tym, że klasy nie są idealnie zrównoważone. Zastosowanie podziału stratyfikowanego pozwoli zachować reprezentatywność zarówno zbioru treningowego, jak i testowego.
-
-W celu zapewnienia powtarzalności wyników należy przyjąć stałe ziarno generatora liczb losowych, na przykład \texttt{random\_state = 42}. W dalszych etapach prac możliwe jest dodatkowe wydzielenie niewielkiego zbioru walidacyjnego ze zbioru treningowego, jednak na etapie koncepcyjnym za podstawowy przyjęto podział trening/test w proporcji 80/20.
-
-\section{Koncepcja realizacji sieci neuronowej}
-
-Do rozwiązania rozważanego zadania proponuje się zastosowanie wielowarstwowej sieci perceptronowej MLP o następującej strukturze:
-\begin{itemize}
-    \item warstwa wejściowa -- 13 neuronów,
-    \item jedna warstwa ukryta -- 9 neuronów,
-    \item warstwa wyjściowa -- 3 neurony.
-\end{itemize}
-
-Przyjęta architektura może zostać zapisana w postaci:
-\[
-13 \rightarrow 9 \rightarrow 3.
-\]
-
-Liczba neuronów w warstwie wejściowej wynika bezpośrednio z liczby cech opisujących próbkę. Warstwa wyjściowa zawiera trzy neurony, ponieważ zadanie obejmuje rozróżnienie trzech klas win. Zastosowanie jednej warstwy ukrytej o 9 neuronach stanowi kompromis pomiędzy zdolnością modelu do reprezentowania nieliniowych zależności a ograniczeniem ryzyka przeuczenia, które w przypadku danego zbioru danych jest istotne.
-
-W warstwie ukrytej proponuje się zastosowanie funkcji aktywacji ReLU:
-\[
-f(x) = \max(0, x).
-\]
-Funkcja ta jest prosta obliczeniowo oraz dobrze sprawdza się w zadaniach klasyfikacyjnych. W warstwie wyjściowej proponuje się zastosowanie funkcji softmax, która pozwala interpretować odpowiedzi sieci jako prawdopodobieństwa przynależności do poszczególnych klas.
-
-Proces uczenia sieci będzie realizowany z wykorzystaniem algorytmu propagacji wstecznej błędu. W każdej iteracji najpierw wykonywana będzie propagacja w przód, polegająca na obliczeniu odpowiedzi sieci dla danych wejściowych. Następnie wynik działania sieci zostanie porównany z rzeczywistą etykietą klasy, co umożliwi wyznaczenie wartości funkcji kosztu. Na tej podstawie obliczone zostaną gradienty błędu względem wag i biasów, a następnie parametry sieci zostaną zaktualizowane w taki sposób, aby zmniejszyć błąd klasyfikacji w kolejnych iteracjach.
-
-Jako funkcję kosztu proponuje się zastosowanie funkcji cross-entropy. Wybór ten wynika z faktu, że rozważane zadanie ma charakter klasyfikacji wieloklasowej, a warstwa wyjściowa sieci wykorzystuje funkcję softmax. Połączenie softmax i cross-entropy jest standardowym rozwiązaniem w tego typu problemach, ponieważ pozwala skutecznie mierzyć różnicę pomiędzy prawidłową klasą a prawdopodobieństwami wyznaczonymi przez sieć. Dzięki temu możliwe jest efektywne korygowanie parametrów modelu podczas uczenia.
-
-Do aktualizacji wag proponuje się zastosowanie metody mini-batch gradient descent. Oznacza to, że parametry sieci nie są aktualizowane ani po pojedynczej próbce, ani dopiero po przetworzeniu całego zbioru danych, lecz po niewielkich partiach przykładów uczących. Takie rozwiązanie stanowi kompromis pomiędzy szybkością uczenia a stabilnością procesu optymalizacji. W porównaniu z aktualizacją po jednej próbce metoda ta daje zwykle bardziej stabilny przebieg uczenia, natomiast w porównaniu z aktualizacją po całym zbiorze pozwala na częstsze korygowanie parametrów i sprawniejsze wykonywanie obliczeń.
-
-Jako początkowe parametry procesu uczenia proponuje się przyjąć:
-\begin{itemize}
-    \item współczynnik uczenia $\eta = 0{,}01$,
-    \item rozmiar partii danych (\textit{batch size}) równy 16,
-    \item liczbę epok z zakresu od 100 do 150.
-\end{itemize}
-
-Przyjęcie współczynnika uczenia na poziomie $0{,}01$ stanowi rozsądny kompromis pomiędzy szybkością uczenia a stabilnością zmian parametrów. Zbyt duża wartość mogłaby powodować niestabilność procesu uczenia, natomiast zbyt mała prowadziłaby do bardzo wolnej poprawy wyników. Rozmiar partii równy 16 jest odpowiedni dla stosunkowo niewielkiego zbioru danych i pozwala na efektywne wykorzystanie mini-batch gradient descent bez nadmiernego zwiększania kosztu obliczeń. Liczbę epok na poziomie 100--150 dobrano jako wartość wystarczającą do wstępnego nauczenia niewielkiej sieci MLP dla analizowanego problemu, przy jednoczesnym ograniczeniu ryzyka nadmiernego dopasowania do danych treningowych.
-
-Wagi sieci proponuje się zainicjalizować małymi losowymi wartościami, aby uniknąć sytuacji, w której wszystkie neurony rozpoczynają uczenie od identycznych parametrów. Biasy mogą zostać zainicjalizowane wartościami zerowymi, ponieważ nie powoduje to problemów symetrii w takim stopniu jak w przypadku wag. Przyjęte ustawienia mają charakter początkowej propozycji i w dalszym etapie projektu mogą zostać skorygowane na podstawie wyników uzyskanych podczas eksperymentów. Przyjęte parametry mają charakter początkowej propozycji i mogą zostać skorygowane w dalszym etapie projektu na podstawie uzyskanych wyników eksperymentalnych.
-
-\section{Podsumowanie}
-
-Przeprowadzona analiza potwierdziła, że zbiór danych wine jest odpowiedni do zadania klasyfikacji z użyciem sieci neuronowej. Dane są kompletne, wszystkie cechy mają charakter numeryczny, a rozkłady części zmiennych różnią się pomiędzy klasami. Jako metodę wstępnego przetwarzania zaproponowano standaryzację cech wejściowych, jako sposób podziału danych przyjęto proporcję 80\%/20\% z zachowaniem udziału klas, natomiast jako model klasyfikacyjny zaproponowano sieć MLP o architekturze $13 \rightarrow 9 \rightarrow 3$, uczoną metodą propagacji wstecznej błędu z wykorzystaniem mini-batch gradient descent.
 \end{document}

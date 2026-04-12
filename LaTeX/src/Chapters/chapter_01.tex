@@ -1,0 +1,66 @@
+\section{Analiza zbioru danych}
+
+Analizowany zbiór danych pochodzi z repozytorium \textit{UCI Machine Learning Repository} i dotyczy zadania klasyfikacji win na podstawie ich właściwości chemicznych. Zbiór obejmuje 178 próbek, z których każda została opisana za pomocą 13 cech wejściowych oraz jednej zmiennej docelowej określającej przynależność do klasy. Rozważany problem ma charakter klasyfikacji wieloklasowej i obejmuje trzy klasy. Liczebność poszczególnych klas wynosi odpowiednio: 59 próbek dla klasy 1, 71 próbek dla klasy 2 oraz 48 próbek dla klasy 3.
+
+\subsection{Cechy wejściowe}
+
+Każda próbka wina opisana jest za pomocą 13 cech wejściowych charakteryzujących jej właściwości chemiczne: \textit{Alcohol}, \textit{Malic acid}, \textit{Ash}, \textit{Alcalinity of ash}, \textit{Magnesium}, \textit{Total phenols}, \textit{Flavanoids}, \textit{Nonflavanoid phenols}, \textit{Proanthocyanins}, \textit{Color intensity}, \textit{Hue}, \textit{OD280/OD315 of diluted wines} oraz \textit{Proline}. Zmienną wyjściową jest kolumna \texttt{Target}, wskazująca klasę, do której należy dana próbka.
+
+\subsection{Wyniki analizy wstępnej}
+
+W ramach wstępnej analizy danych wyznaczono podstawowe statystyki opisowe dla wszystkich cech wejściowych, obejmujące średnią arytmetyczną, wartość minimalną, wartość maksymalną, odchylenie standardowe, rozstęp, medianę, pierwszy kwartyl, trzeci kwartyl oraz rozstęp międzykwartylowy. Zestawienie statystyk dla całego zbioru danych przedstawiono w tabeli~\ref{tab:all_statistics}, natomiast analogiczne wyniki wyznaczone osobno dla klas 1, 2 i 3 zamieszczono odpowiednio w tabelach~\ref{tab:target1_statistics}, \ref{tab:target2_statistics} oraz~\ref{tab:target3_statistics}.
+
+Dodatkowo przeprowadzono analizę graficzną danych, obejmującą histogramy rozkładów poszczególnych cech wraz z ich funkcjami gęstości, wykresy pudełkowe, macierz korelacji oraz wykresy typu \textit{pairplot} dla wybranych zmiennych.
+Wszystkie z powyższych zostały umieszczone w aneksie by zachować czytelność pracy.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Descriptive statistics for entire dataset.}
+    \label{tab:all_statistics}
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.0}
+    \resizebox{\textwidth}{!}{%
+        \input{tables/all_statistics.tex}
+    }
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Descriptive statistics for class 1.}
+    \label{tab:target1_statistics}
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.0}
+    \resizebox{\textwidth}{!}{%
+        \input{tables/Target=1_statistics.tex}
+    }
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Descriptive statistics for class 2.}
+    \label{tab:target2_statistics}
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.0}
+    \resizebox{\textwidth}{!}{%
+        \input{tables/Target=2_statistics.tex}
+    }
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Descriptive statistics for class 3.}
+    \label{tab:target3_statistics}
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.0}
+    \resizebox{\textwidth}{!}{%
+        \input{tables/Target=3_statistics.tex}
+    }
+\end{table}
+
+\FloatBarrier
+
+Na podstawie przeprowadzonej analizy stwierdzono, że wszystkie cechy wejściowe mają charakter numeryczny, a w zbiorze danych nie występują braki danych. Jednocześnie zaobserwowano istotne różnice w zakresach wartości poszczególnych cech, co wskazuje na potrzebę odpowiedniego przeskalowania danych przed etapem uczenia modelu. Analiza rozkładów wykazała, że część cech przyjmuje odmienne wartości w poszczególnych klasach, co potwierdza zasadność zastosowania metod klasyfikacyjnych. Szczególnie dobrą zdolnością do rozróżniania klas charakteryzują się cechy \textit{Flavanoids}, \textit{OD280/OD315 of diluted wines}, \textit{Total phenols}, \textit{Proline} oraz \textit{Hue}. Uzyskane wyniki wskazują, że analizowany zbiór danych jest odpowiedni do zastosowania wielowarstwowej sieci perceptronowej MLP, jednak przed podaniem danych na wejście modelu konieczne jest ich właściwe przygotowanie.

@@ -1,0 +1,7 @@
+\section{Proponowany podział zbioru danych}
+
+Proponuje się podział zbioru danych na część treningową i testową w proporcji 80\% do 20\%. Oznacza to, że 142 próbek zostanie przeznaczonych do uczenia modelu, a 36 próbek do jego końcowej oceny.
+
+Podział powinien zostać wykonany w sposób losowy, ale z zachowaniem proporcji klas w obu częściach zbioru. Takie podejście jest uzasadnione tym, że klasy nie są idealnie zrównoważone. Zastosowanie podziału stratyfikowanego pozwoli zachować reprezentatywność zarówno zbioru treningowego, jak i testowego.
+
+W celu zapewnienia powtarzalności wyników należy przyjąć stałe ziarno generatora liczb losowych, na przykład \texttt{random\_state = 42}. W dalszych etapach prac możliwe jest dodatkowe wydzielenie niewielkiego zbioru walidacyjnego ze zbioru treningowego, jednak na etapie koncepcyjnym za podstawowy przyjęto podział trening/test w proporcji 80/20.
