@@ -7,9 +7,9 @@ Zakres:
 - wczytanie zbioru Wine z pliku CSV
 - wydzielenie cech wejściowych i etykiet klas
 - mapowanie klas z zakresu {1, 2, 3} do {0, 1, 2}
-- stratyfikowany podział na zbiór treningowy i testowy
+- stratyfikowany podział na zbióry train/test/validation
 - standaryzacja cech na podstawie danych treningowych
-- generowanie mini-batchy do procesu uczenia
+- generowanie mini-batchy
 """
 
 from dataclasses import dataclass
@@ -48,6 +48,8 @@ class DatasetSplit:
     Attributes:
         x_train: Zestandaryzowane cechy zbioru treningowego
         y_train: Etykiety klas dla zbioru treningowego
+        x_val: Zestandaryzowane cechy zbioru walidacyjnego
+        y_val: Etykiety klas dla zbioru walidacyjnego
         x_test: Zestandaryzowane cechy zbioru testowego
         y_test: Etykiety klas dla zbioru testowego
         feature_names: Lista nazw cech wejściowych
@@ -57,13 +59,14 @@ class DatasetSplit:
     """
     x_train: FloatArray
     y_train: IntArray
+    x_val: FloatArray | None
+    y_val: IntArray | None
     x_test: FloatArray
     y_test: IntArray
     feature_names: list[str]
     class_labels: list[int]
     train_mean: FloatArray
     train_std: FloatArray
-
 
 def _map_labels_to_zero_based(y: IntArray) -> tuple[IntArray, list[int]]:
     """
@@ -85,65 +88,78 @@ def _map_labels_to_zero_based(y: IntArray) -> tuple[IntArray, list[int]]:
     return mapped, class_labels
 
 
-def _stratified_split(
-    x: FloatArray,
-    y: IntArray,
-    test_size: float = 0.2,
-    random_state: int = 42,
-) -> tuple[FloatArray, IntArray, FloatArray, IntArray]:
+def _stratified_split_indices(
+        y: IntArray,
+        first_ratio: float,
+        second_ratio: float,
+        random_state: int,
+) -> tuple[IntArray, IntArray]:
     """
-    Wykonuje stratyfikowany podział danych na zbiór treningowy i testowy
-    Stratyfikacja - zachowanie proporcji klas w obu częściach zbioru
+    Dzieli indeksy na dwie części w sposób stratyfikowany
+    Funkcja zachowuje proporcje klas w obu częściach podziału
     Args:
-        x: Macierz cech wejściowych
         y: Wektor etykiet klas
-        test_size: Udział danych testowych w całym zbiorze
+        first_ratio: Udział pierwszej części
+        second_ratio: Udział drugiej części
         random_state: Ziarno generatora liczb losowych
     Returns:
-        Krotka zawierająca:
-        - cechy treningowe
-        - etykiety treningowe
-        - cechy testowe
-        - etykiety testowe
+        Krotka (first_indices, second_indices)
     """
-    rng = np.random.default_rng(random_state)
-    train_indices: list[int] = []
-    test_indices: list[int] = []
+    if first_ratio <= 0 or second_ratio <= 0:
+        raise ValueError("Both ratios must be > 0 for stratified split")
 
-    # Dla każdej klasy losujemy osobno próbki do train i test
+    total = first_ratio + second_ratio
+    first_share = first_ratio / total
+
+    rng = np.random.default_rng(random_state)
+
+    first_indices: list[int] = []
+    second_indices: list[int] = []
+
+    # Kazda klase dzielimy osobno
     for class_id in np.unique(y):
         class_indices = np.where(y == class_id)[0]
         rng.shuffle(class_indices)
-        test_count = max(1, int(round(len(class_indices) * test_size)))
-        test_indices.extend(class_indices[:test_count].tolist())
-        train_indices.extend(class_indices[test_count:].tolist())
+        first_count = int(round(len(class_indices) * first_share))
 
-    train_indices = np.array(train_indices, dtype=np.int64)
-    test_indices = np.array(test_indices, dtype=np.int64)
+        # Zabezpieczenie, żeby obie części nie były puste dla danej klasy
+        if first_count <= 0:
+            first_count = 1
+        if first_count >= len(class_indices):
+            first_count = len(class_indices) - 1
 
-    rng.shuffle(train_indices)
-    rng.shuffle(test_indices)
+        first_indices.extend(class_indices[:first_count].tolist())
+        second_indices.extend(class_indices[first_count:].tolist())
 
-    return x[train_indices], y[train_indices], x[test_indices], y[test_indices]
+    first_indices = np.array(first_indices, dtype=np.int64)
+    second_indices = np.array(second_indices, dtype=np.int64)
+
+    rng.shuffle(first_indices)
+    rng.shuffle(second_indices)
+
+    return first_indices, second_indices
 
 
 def _standardize(
     x_train: FloatArray,
     x_test: FloatArray,
-) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
+    x_val: FloatArray | None = None,
+) -> tuple[FloatArray, FloatArray, FloatArray | None, FloatArray, FloatArray]:
     """
     Standaryzuje dane wejściowe na podstawie zbioru treningowego
     Standaryzacja według wzoru:
         x' = (x - mean) / std
     Parametry mean i std są wyznaczane wyłącznie na zbiorze treningowym
-    stosowane również do zbioru testowego
+    stosowane również do zbioru testowego i opcjonalnie walidacyjnego
     Args:
         x_train: Cechy zbioru treningowego
         x_test: Cechy zbioru testowego
+        x_val: Cechy zbioru walidacyjnego
     Returns:
         Krotka zawierająca:
         - zestandaryzowany zbiór treningowy
         - zestandaryzowany zbiór testowy
+        - zestandaryzowany zbiór walidacyjny
         - średnie cech dla train
         - odchylenia standardowe cech dla train
     """
@@ -151,51 +167,140 @@ def _standardize(
     std = np.std(x_train, axis=0)
     # Zabezpieczenie przed dzieleniem przez zero
     std[std == 0.0] = 1.0
+
     x_train_std = (x_train - mean) / std
     x_test_std = (x_test - mean) / std
 
-    return x_train_std, x_test_std, mean, std
+    x_val_std = None
+    if x_val is not None:
+        x_val_std = (x_val - mean) / std
+
+    return x_train_std, x_test_std, x_val_std, mean, std
 
 def load_wine_dataset(
     data_path: str | Path,
+    train_size: float = 0.8,
     test_size: float = 0.2,
+    val_size: float = 0.0,
     random_state: int = 42,
 ) -> DatasetSplit:
     """
     Wczytuje zbiór i przygotowuje go do dalszego użycia
-    Funkcja:
-    - wczytuje dane z pliku CSV
-    - rozdziela cechy i etykiety klas
-    - mapuje klasy do zakresu {0, 1, 2}
-    - wykonuje stratyfikowany podział train/test
-    - standaryzuje dane wejściowe
+    Domyślnie podzial train/test = 80/20
+    jeżeli val_size > 0, wykonywane podzial train/test/val
+
     Args:
         data_path: Ścieżka do pliku data.csv
-        test_size: Udział danych testowych w całym zbiorze
+        train_size: Finalna propocja zbioru treningowego
+        test_size: Finalna propocja zbioru testowego
+        val_size: Finalna propocja zbioru walidacyjnego
+            wartość 0.0 oznacza brak zbioru
         random_state: Ziarno generatora liczb losowych
     Returns:
         Obiekt DatasetSplit zawierający dane po preprocessingu
     """
+    # Sprawdzanie poprawności zakresów
+    if not (0 < train_size < 1):
+        raise ValueError(f"train_size must be in range (0, 1), got {train_size}")
+
+    if not (0 < test_size < 1):
+        raise ValueError(f"test_size must be in range (0, 1), got {test_size}")
+
+    if not (0 <= val_size < 1):
+        raise ValueError(f"val_size must be in range [0, 1), got {val_size}")
+
+    # Suma proporcji musi dawać 1
+    total = train_size + test_size + val_size
+    if not np.isclose(total, 1.0):
+        raise ValueError(
+            f"train_size + test_size + val_size must equal 1.0, got {total}"
+        )
+
     # Wczytanie danych bez nagłówków
     df = pd.read_csv(data_path, header=None)
 
     # Pierwsza kolumna to etykieta klasy, pozostałe to cechy
     y_raw = df.iloc[:, 0].to_numpy(dtype=np.int64)
     x_raw = df.iloc[:, 1:].to_numpy(dtype=np.float64)
+
     # Mapowanie klas z {1,2,3} do {0,1,2}
     y, class_labels = _map_labels_to_zero_based(y_raw)
-    # Podział danych zgodny z założeniami
-    x_train, y_train, x_test, y_test = _stratified_split(
-        x_raw,
-        y,
-        test_size=test_size,
+
+    if np.isclose(val_size, 0.0):
+        train_indices, test_indices = _stratified_split_indices(
+            y=y,
+            first_ratio=train_size,
+            second_ratio=test_size,
+            random_state=random_state,
+        )
+
+        x_train = x_raw[train_indices]
+        y_train = y[train_indices]
+
+        x_test = x_raw[test_indices]
+        y_test = y[test_indices]
+
+        # Standaryzacja liczona tylko na train
+        x_train, x_test, _, train_mean, train_std = _standardize(
+            x_train=x_train,
+            x_test=x_test,
+            x_val=None,
+        )
+
+        return DatasetSplit(
+            x_train=x_train,
+            y_train=y_train,
+            x_val=None,
+            y_val=None,
+            x_test=x_test,
+            y_test=y_test,
+            feature_names=WINE_FEATURE_NAMES,
+            class_labels=class_labels,
+            train_mean=train_mean,
+            train_std=train_std,
+        )
+
+    # Jeśli val_size > 0, najpierw wydzielamy train,
+    # z pozostałej puli wydzielamy validation i test
+    train_indices, temp_indices = _stratified_split_indices(
+        y=y,
+        first_ratio=train_size,
+        second_ratio=val_size + test_size,
         random_state=random_state,
     )
+
+    x_train = x_raw[train_indices]
+    y_train = y[train_indices]
+
+    x_temp = x_raw[temp_indices]
+    y_temp = y[temp_indices]
+
+    # Z puli tymczasowej wydzielamy validation i test
+    val_indices_local, test_indices_local = _stratified_split_indices(
+        y=y_temp,
+        first_ratio=val_size,
+        second_ratio=test_size,
+        random_state=random_state + 1,
+    )
+
+    x_val = x_temp[val_indices_local]
+    y_val = y_temp[val_indices_local]
+
+    x_test = x_temp[test_indices_local]
+    y_test = y_temp[test_indices_local]
+
     # Standaryzacja wyznaczana wyłącznie na train
-    x_train, x_test, train_mean, train_std = _standardize(x_train, x_test)
+    x_train, x_test, x_val, train_mean, train_std = _standardize(
+        x_train = x_train,
+        x_test = x_test,
+        x_val = x_val,
+    )
+
     return DatasetSplit(
         x_train=x_train,
         y_train=y_train,
+        x_val=x_val,
+        y_val=y_val,
         x_test=x_test,
         y_test=y_test,
         feature_names=WINE_FEATURE_NAMES,
@@ -208,7 +313,7 @@ def load_wine_dataset(
 class BatchLoader:
     """
     Iterator zwracający mini-batche danych
-    Klasa służy do dzielenia danych treningowych na mniejsze partie,
+    Klasa służy do dzielenia danych treningowych na mniejsze partie
     wykorzystywane podczas uczenia
     Attributes:
         x: Macierz cech wejściowych
@@ -247,7 +352,7 @@ class BatchLoader:
         """
         indices = np.arange(self.x.shape[0])
 
-        # Opcjonalne tasowanie danych przed rozpoczęciem epoki !
+        # Opcjonalne tasowanie danych przed rozpoczęciem epoki
         if self.shuffle:
             self._rng.shuffle(indices)
         # Zwracanie kolejnych batchy
