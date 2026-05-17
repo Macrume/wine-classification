@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from neural_network.types import FloatArray
+from utils.types import FloatArray
 from neural_network.activations import Activation, linear
 
 class DenseLayer():
@@ -11,13 +11,19 @@ class DenseLayer():
         num_outputs: int, 
         num_inputs : int,
         activation : Activation = linear,
+        rng: np.random.Generator | None = None,
     ) -> None:
         
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.activation = activation
         
-        self.weights: FloatArray = np.random.rand(num_inputs, num_outputs)
+        if rng is None:
+            rng = np.random.default_rng()
+        
+        self.weights: FloatArray = rng.standard_normal(
+            size=(num_inputs, num_outputs)
+        ) * 0.01
         self.biases: FloatArray = np.zeros(num_outputs)
         
         self.last_input: FloatArray | None = None
@@ -39,20 +45,24 @@ class DenseLayer():
 
         self.last_input = x
 
-        self.last_z = x @ self.weights + self.biases
+        z = x @ self.weights + self.biases
+        self.last_z = z
 
-        self.last_output = self.activation(self.last_z)
+        output = self.activation(z)
+        self.last_output = output
 
-        return self.last_output
+        return output
     
     def backward(self, d_output: FloatArray) -> FloatArray:
         if self.last_input is None or self.last_z is None:
             raise RuntimeError("Cannot call backward before forward")
         
         d_z = d_output * self.activation.derivative(self.last_z)
+        
+        batch_size = self.last_input.shape[0]
 
-        self.d_weights = self.last_input.T @ d_z
-        self.d_biases = np.sum(d_z, axis=0)
+        self.d_weights = self.last_input.T @ d_z 
+        self.d_biases = np.sum(d_z, axis=0) 
 
         d_input = d_z @ self.weights.T
 

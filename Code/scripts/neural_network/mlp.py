@@ -1,4 +1,6 @@
-from neural_network.types import FloatArray
+import numpy as np
+
+from utils.types import FloatArray
 from neural_network.layers import DenseLayer
 from neural_network.activations import Activation, relu, linear
 
@@ -8,6 +10,7 @@ class MultiLayerPerceptron:
         self,
         layer_sizes: list[int],
         activations: list[Activation] | None = None,
+        random_state: int | None = None,
     ) -> None:
         if len(layer_sizes) < 2:
             raise ValueError("Provide at least input and output layer size")
@@ -21,6 +24,8 @@ class MultiLayerPerceptron:
             raise ValueError(
                 f"Expected {num_layers} activations, got {len(activations)}"
             )
+            
+        rng = np.random.default_rng(random_state)
 
         self.layer_sizes = layer_sizes
         self.layers: list[DenseLayer] = []
@@ -30,6 +35,7 @@ class MultiLayerPerceptron:
                 num_inputs=layer_sizes[i],
                 num_outputs=layer_sizes[i + 1],
                 activation=activations[i],
+                rng=rng,
             )
             self.layers.append(layer)
 
@@ -38,6 +44,13 @@ class MultiLayerPerceptron:
             x = layer(x)
 
         return x
+    
+    def backward(self, d_output: FloatArray ) -> FloatArray:
+        gradient = d_output
+        for layer in reversed(self.layers):
+            gradient = layer.backward(gradient)
+        return gradient
+    
 
     def __call__(self, x: FloatArray) -> FloatArray:
         return self.forward(x)

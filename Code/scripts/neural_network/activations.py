@@ -1,23 +1,19 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 
-from neural_network.types import FloatArray
+from utils.types import FloatArray
 
 ActivationFunction = Callable[[FloatArray], FloatArray]
 
+@dataclass
 class Activation:
-    def __init__(
-        self,
-        name: str,
-        function: ActivationFunction,
-        derivative: ActivationFunction,
-    ) -> None:
-        self.name = name
-        self.function = function
-        self.derivative = derivative
-        
+    name: str
+    function: ActivationFunction
+    derivative: ActivationFunction
+   
     def __call__(self, x: FloatArray) -> FloatArray:
         return self.function(x)
     

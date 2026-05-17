@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from scripts.dataloader import BatchLoader, load_wine_dataset
+from Code.scripts.data.dataloader import BatchLoader, load_wine_dataset
 
 
 def main() -> None:
