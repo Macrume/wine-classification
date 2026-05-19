@@ -11,8 +11,21 @@ def stratified_split_indices(
     second_ratio: float,
     random_state: int,
 ) -> tuple[IntArray, IntArray]:
-    """
-    Dzieli indeksy na dwie części, zachowując proporcje klas.
+    """Split sample indices into two stratified subsets.
+    Args:
+        y: Label vector with shape ``(num_samples)``.
+        first_ratio: Relative size of the first subset.
+        second_ratio: Relative size of the second subset.
+        random_state: Seed used by the random number generator.
+
+    Returns:
+        A tuple containing:
+            - Indices assigned to the first subset.
+            - Indices assigned to the second subset.
+
+    Raises:
+        ValueError: If either ratio is not positive, or if any class has fewer
+            than two samples.
     """
     if first_ratio <= 0 or second_ratio <= 0:
         raise ValueError("Both ratios must be greater than 0")

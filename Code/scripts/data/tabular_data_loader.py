@@ -13,15 +13,23 @@ from utils.types import FloatArray, IntArray
 
 
 class TabularDataLoader:
-    """
-    Uniwersalny loader dla danych tabelarycznych.
+    """Load, store, split, and preprocess tabular classification data.
+    
+    The loader stores a feature matrix and a label vector. It can be created
+    directly from NumPy arrays or from a CSV file using ``from_csv``. The class
+    supports stratified train/test or train/validation/test splitting and
+    optional feature standardization based on the training split.
+    
+    Args:
+        x: Input feature matrix with shape ``(num_samples, num_features)``.
+        y: Label vector with shape ``(num_samples)``.
+        feature_names: Names of input features.
+        class_labels: Original class labels.
 
-    Odpowiedzialności:
-    - przechowywanie X i y,
-    - opcjonalne mapowanie etykiet do 0..n-1,
-    - stratyfikowany split train/test/validation,
-    - opcjonalna standaryzacja cech.
-    """
+    Raises:
+        ValueError: If ``x`` is not 2D, if ``y`` is not 1D, if ``x`` and ``y``
+            contain different numbers of samples, or if the number of feature
+            names does not match the number of features."""
 
     def __init__(
         self,
@@ -62,6 +70,26 @@ class TabularDataLoader:
         feature_names: list[str] | None = None,
         map_labels: bool = True,
     ) -> TabularDataLoader:
+        """Create a loader from a CSV file.
+        
+        The target column is extracted as the label vector, and selected feature
+        columns are extracted as the input matrix. If ``feature_columns`` is not
+        provided, all columns except the target column are used as features.
+        
+        Args:
+            data_path: Path to the CSV file.
+            target_column: Column containing class labels.
+            feature_columns: Columns used as input features. If None, all
+                columns except ``target_column`` are used.
+            header: Row number used as the CSV header. Use None for files
+                without a header.
+            feature_names: Optional feature names.
+            map_labels: Whether to map labels to the range``[0, num_classes - 1]``.
+        
+        Returns:
+            A ``TabularDataLoader`` instance containing features, labels, and
+            optional metadata.
+                """
         df = pd.read_csv(data_path, header=header)
 
         y_raw = df[target_column].to_numpy(dtype=np.int64)
@@ -98,6 +126,28 @@ class TabularDataLoader:
         standardize_features: bool = True,
         random_state: int = 42,
     ) -> DatasetSplit:
+        """Split the dataset into train, test, and optional validation sets.
+        
+        The split is stratified, so class proportions are approximately
+        preserved in each subset. If ``standardize_features`` is enabled, the
+        mean and standard deviation are computed only from the training set and
+        then applied to the remaining subsets.
+        
+        Args:
+            train_size: Proportion of samples assigned to the training set.
+            test_size: Proportion of samples assigned to the test set.
+            val_size: Proportion of samples assigned to the validation set.
+                Use 0.0 to disable validation split.
+            standardize_features: Whether to standardize input features.
+            random_state: Seed used by the random number generator.
+
+        Returns:
+            A ``DatasetSplit`` object containing train, test, and optional
+            validation datasets.
+
+        Raises:
+            ValueError: If split sizes are outside valid ranges or do not sum
+                to 1.0."""
         self._validate_split_sizes(
             train_size=train_size,
             test_size=test_size,
@@ -127,6 +177,16 @@ class TabularDataLoader:
         standardize_features: bool,
         random_state: int,
     ) -> DatasetSplit:
+        """Create a stratified train/test split.
+        
+        Args:
+            train_size: Proportion of samples assigned to the training set.
+            test_size: Proportion of samples assigned to the test set.
+            standardize_features: Whether to standardize input features.
+            random_state: Seed used by the random number generator.
+
+        Returns:
+            A ``DatasetSplit`` object containing training and test datasets."""
         train_indices, test_indices = stratified_split_indices(
             y=self.y,
             first_ratio=train_size,
@@ -176,6 +236,25 @@ class TabularDataLoader:
         standardize_features: bool,
         random_state: int,
     ) -> DatasetSplit:
+        """Create a stratified train/validation/test split.
+
+        The training split is created first. The remaining samples are then
+        split into validation and test subsets.
+
+        Args:
+            train_size: Proportion of samples assigned to the training set.
+            test_size: Proportion of samples assigned to the test set.
+            val_size: Proportion of samples assigned to the validation set.
+            standardize_features: Whether to standardize input features.
+            random_state: Seed used by the random number generator.
+
+        Returns:
+            A ``DatasetSplit`` object containing training, validation, and test
+            datasets.
+
+        Raises:
+            RuntimeError: If standardized validation data is unexpectedly None.
+        """
         train_indices, temp_indices = stratified_split_indices(
             y=self.y,
             first_ratio=train_size,
@@ -246,6 +325,17 @@ class TabularDataLoader:
         test_size: float,
         val_size: float,
     ) -> None:
+        """Validate train, test, and validation split proportions.
+
+        Args:
+            train_size: Proportion of samples assigned to the training set.
+            test_size: Proportion of samples assigned to the test set.
+            val_size: Proportion of samples assigned to the validation set.
+
+        Raises:
+            ValueError: If any split size is outside its valid range or if all
+                split sizes do not sum to 1.0.
+        """
         if not (0 < train_size < 1):
             raise ValueError(
                 f"train_size must be in range (0, 1), got {train_size}"

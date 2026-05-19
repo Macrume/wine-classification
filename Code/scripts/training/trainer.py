@@ -12,6 +12,11 @@ from utils.types import FloatArray, IntArray
 
 
 class LossFunction(Protocol):
+    """Protocol for loss functions used during model training.
+
+    A compatible loss function must provide methods for computing the scalar
+    loss value and the gradient of the loss with respect to model outputs.
+    """
     def loss(self, logits: FloatArray, y_true: IntArray) -> float:
         ...
 
@@ -20,12 +25,21 @@ class LossFunction(Protocol):
 
 
 class Optimizer(Protocol):
+    """Protocol for optimizers used to update model parameters."""
     def step(self, model: MultiLayerPerceptron) -> None:
         ...
 
 
 @dataclass
 class EpochStats:
+    """Store metrics collected after one training epoch.
+
+    Attributes:
+        epoch: Epoch number.
+        train_metrics: Metrics computed on the training set.
+        val_metrics: Metrics computed on the validation set, if provided.
+        test_metrics: Metrics computed on the test set, if provided.
+    """
     epoch: int
 
     train_metrics: ClassificationMetrics
@@ -34,12 +48,30 @@ class EpochStats:
 
 
 class Trainer:
+    """Train and evaluate a multilayer perceptron model.
+
+    The trainer combines a model, loss function, optimizer and data loaders
+    into a complete training loop. It also stores training history.
+
+    Attributes:
+        model: Model trained by the trainer.
+        loss_fn: Loss function used during training and evaluation.
+        optimizer: Optimizer used to update model parameters.
+        history: List of epoch-level training statistics.
+    """
     def __init__(
         self,
         model: MultiLayerPerceptron,
         loss_fn: LossFunction,
         optimizer: Optimizer,
     ) -> None:
+        """Initialize the trainer.
+
+        Args:
+            model: Model to train.
+            loss_fn: Loss function used to compute loss and gradients.
+            optimizer: Optimizer used to update model parameters.
+        """
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
@@ -53,6 +85,24 @@ class Trainer:
         test_loader: BatchLoader | None = None,
         print_every: int = 1,
     ) -> list[EpochStats]:
+        """Train the model for a given number of epochs.
+
+        Args:
+            train_loader: Mini-batch loader for the training set.
+            epochs: Number of training epochs.
+            val_loader: Optional mini-batch loader for the validation set.
+            test_loader: Optional mini-batch loader for the test set.
+            print_every: Print training statistics every given number of epochs.
+
+        Returns:
+            List of ``EpochStats`` objects collected during training.
+
+        Raises:
+            ValueError: If ``epochs`` is not positive.
+        """
+        if epochs <= 0:
+            raise ValueError(f"epochs must be positive, got {epochs}")
+        
         for epoch in range(1, epochs + 1):
             train_metrics = self._train_one_epoch(train_loader)
 
@@ -73,12 +123,25 @@ class Trainer:
 
             self.history.append(stats)
 
-            if epoch % print_every == 0:
+            if print_every > 0 and epoch % print_every == 0:
                 self._print_stats(stats)
 
         return self.history
 
     def _train_one_epoch(self, train_loader: BatchLoader) -> ClassificationMetrics:
+        """Run one training epoch.
+
+        For each mini-batch, the method performs a forward pass, computes loss,
+        runs backpropagation and updates model parameters. Metrics are computed
+        once at the end of the epoch using predictions collected from all
+        mini-batches.
+
+        Args:
+            train_loader: Mini-batch loader for the training set.
+
+        Returns:
+            Classification metrics computed over the whole training epoch.
+        """
         total_loss = 0.0
         total_samples = 0
 
@@ -115,6 +178,17 @@ class Trainer:
         )
 
     def evaluate(self, loader: BatchLoader) -> ClassificationMetrics:
+        """Evaluate the model on a dataset.
+
+        The method performs only forward passes. It does not compute gradients
+        and does not update model parameters.
+
+        Args:
+            loader: Mini-batch loader for the evaluated dataset.
+
+        Returns:
+            Classification metrics computed over the whole dataset.
+        """
         total_loss = 0.0
         total_samples = 0
 
@@ -147,6 +221,17 @@ class Trainer:
 
     @staticmethod
     def _format_metrics(name: str, metrics: ClassificationMetrics) -> str:
+        """Format classification metrics for printing.
+
+        Args:
+            name: Prefix used to identify the dataset split, for example
+                ``"train"``, ``"val"`` or ``"test"``.
+            metrics: Metrics to format.
+
+        Returns:
+            Formatted string containing loss, accuracy, sensitivity and
+            specificity.
+        """
         return (
             f"{name}_loss={metrics.loss:.4f} | "
             f"{name}_acc={metrics.accuracy:.4f} | "
@@ -155,6 +240,11 @@ class Trainer:
         )
 
     def _print_stats(self, stats: EpochStats) -> None:
+        """Print epoch statistics.
+
+        Args:
+            stats: Epoch statistics to print.
+        """
         parts = [
             f"epoch={stats.epoch:04d}",
             self._format_metrics("train", stats.train_metrics),

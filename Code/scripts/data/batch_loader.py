@@ -8,10 +8,25 @@ from utils.types import FloatArray, IntArray
 
 
 class BatchLoader:
+    """Iterate over mini-batches of features and labels.
+    
+    The loader stores input samples and labels, optionaly shuffles samples
+    indeces at the begining of each iteration, and yields subsequent batches
+    of size ``batch_size``.
+    
+    ## Attributes:
+        x: input feature matrix with shape ``(num_samples, num_features)``.
+        y: Label vector  with shape ``(num_samples)``.
+        batch_size: Number of samples returned in each batch.
+        shuffle: Whethere to shuffle samples befor each itteration or nit.
+        random_state: Seed used to generate random number generator.
+    
+    ## Raises:
+        ValueError if ``batch_size`` is smaller than 1, if ``x`` is not 2D,
+        if ``y`` is not 1D, or ``x`` and ``y`` contains different numbers
+        of samples.
     """
-    Iterator zwracający mini-batche danych.
-    """
-
+    
     def __init__(
         self,
         x: FloatArray,
@@ -42,6 +57,7 @@ class BatchLoader:
         self._rng = np.random.default_rng(random_state)
 
     def __iter__(self) -> Iterator[tuple[FloatArray, IntArray]]:
+        """Yields mini-batches of features and labels."""
         indices = np.arange(self.x.shape[0])
 
         if self.shuffle:
@@ -52,4 +68,5 @@ class BatchLoader:
             yield self.x[batch_indices], self.y[batch_indices]
 
     def __len__(self) -> int:
+        """Return the number of mini-batches per full iteration."""
         return int(np.ceil(self.x.shape[0] / self.batch_size))
