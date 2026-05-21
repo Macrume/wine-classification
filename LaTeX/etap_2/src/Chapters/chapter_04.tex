@@ -1,19 +1,92 @@
 \section{Wyniki uczenia i testy modelu}
 
-\textbf{[DO UZUPEŁNIENIA: opis wyników uczenia i testowania modelu]}
+W celu oceny skuteczności zaimplementowanego modelu MLP przeprowadzono
+proces uczenia na zbiorze treningowym oraz ocenę jakości klasyfikacji na
+zbiorze testowym. Dane zostały podzielone w proporcji \(80/20\), gdzie
+\(80\%\) próbek wykorzystano do uczenia modelu, natomiast pozostałe
+\(20\%\) posłużyło jako zbiór testowy.
+
+Model składał się z warstwy wejściowej odpowiadającej liczbie cech w zbiorze
+Wine, dwóch warstw ukrytych oraz warstwy wyjściowej odpowiadającej liczbie
+klas. Do uczenia wykorzystano funkcję kosztu \texttt{Cross Entropy Loss}
+oraz optymalizator \texttt{Stochastic Gradient Descent}. Proces uczenia
+prowadzono przez 1000 epok.
 
 \subsection{Przebieg procesu uczenia}
 
-\textbf{[DO UZUPEŁNIENIA: wykres błędu uczenia w zależności od liczby epok lub iteracji]}
+Na rysunku \ref{fig:loss_history} przedstawiono przebieg wartości funkcji
+kosztu w kolejnych epokach dla zbioru treningowego oraz testowego.
+Początkowo wartość funkcji kosztu utrzymuje się na zbliżonym poziomie, po
+czym w późniejszych epokach następuje wyraźny spadek. Oznacza to, że model
+zaczął skutecznie dopasowywać swoje parametry do danych.
+
+Istotne jest również to, że krzywe dla zbioru treningowego i testowego mają
+podobny przebieg. Nie zaobserwowano dużego rozjazdu pomiędzy błędem
+treningowym a testowym, co sugeruje, że w przeprowadzonym eksperymencie model
+nie wykazuje wyraźnych oznak przeuczenia.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/loss_history.png}
+    \caption{Przebieg funkcji kosztu dla zbioru treningowego i testowego}
+    \label{fig:loss_history}
+\end{figure}
 
 \subsection{Wyniki klasyfikacji na zbiorze testowym}
 
-\textbf{[DO UZUPEŁNIENIA: wyniki klasyfikacji na zbiorze testowym]}
+Końcowe wyniki uzyskane na zbiorze testowym przedstawiono w tabeli
+\ref{tab:final_test_metrics}. Model uzyskał bardzo wysoką jakość
+klasyfikacji, co potwierdza zarówno wartość accuracy, jak i wartości
+metryk sensitivity oraz specificity.
+
+\begin{table}[H]
+    \centering
+    \input{tables/final_test_metrics.tex}
+    \caption{Końcowe metryki modelu na zbiorze testowym}
+    \label{tab:final_test_metrics}
+\end{table}
+
+Uzyskane wyniki należy interpretować z uwzględnieniem rozmiaru zbioru
+testowego. Zbiór Wine jest stosunkowo niewielki, dlatego pojedynczy podział
+train/test może prowadzić do bardzo dobrych rezultatów. Dla pełniejszej
+oceny stabilności modelu warto byłoby dodatkowo wykonać eksperyment dla
+kilku różnych podziałów danych lub zastosować walidację krzyżową.
 
 \subsection{Macierz pomyłek}
 
-\textbf{[DO UZUPEŁNIENIA: macierz pomyłek]}
+Macierz pomyłek dla zbioru testowego przedstawiono na rysunku
+\ref{fig:test_confusion_matrix}. Wiersze odpowiadają klasom rzeczywistym, natomiast kolumny klasom przewidzianym przez model.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figures/test_confusion_matrix.png}
+    \caption{Macierz pomyłek dla zbioru testowego}
+    \label{fig:test_confusion_matrix}
+\end{figure}
+
+Na podstawie macierzy pomyłek można stwierdzić, że model poprawnie
+zaklasyfikował wszystkie próbki znajdujące się w zbiorze testowym. Brak
+wartości poza główną przekątną oznacza, że w tym eksperymencie nie wystąpiły
+błędne klasyfikacje.
 
 \subsection{Czułość i specyficzność}
 
-\textbf{[DO UZUPEŁNIENIA: wartości sensitivity i specificity]}
+Dodatkowo obliczono czułość (\textit{sensitivity}) oraz specyficzność
+(\textit{specificity}) dla każdej klasy osobno. W przypadku klasyfikacji
+wieloklasowej metryki te zostały policzone w podejściu one-vs-rest, czyli
+każda klasa była kolejno traktowana jako klasa pozytywna, a pozostałe klasy
+jako negatywne.
+
+Wyniki przedstawiono w tabeli \ref{tab:test_sensitivity_specificity}.
+
+\begin{table}[H]
+    \centering
+    \input{tables/test_sensitivity_specificity.tex}
+    \caption{Czułość i specyficzność modelu dla poszczególnych klas}
+    \label{tab:test_sensitivity_specificity}
+\end{table}
+
+Uzyskane wartości sensitivity wskazują, jaką część próbek danej klasy model
+poprawnie rozpoznał. Z kolei specificity określa, jak skutecznie model
+odrzucał próbki nienależące do danej klasy. Wysokie wartości obu metryk
+potwierdzają dobrą jakość klasyfikacji na zbiorze testowym.

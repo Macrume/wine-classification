@@ -1,19 +1,145 @@
 \section{Algorytm uczenia}
 
-\textbf{[DO UZUPEŁNIENIA: opis algorytmu uczenia sieci neuronowej]}
+Algorytm uczenia sieci neuronowej polega na iteracyjnym dopasowywaniu
+parametrów modelu, czyli wag i biasów, w taki sposób, aby minimalizować
+wartość funkcji kosztu. W projekcie proces uczenia został wydzielony do
+klasy \texttt{Trainer}, która łączy ze sobą model, funkcję kosztu,
+optymalizator oraz obiekty odpowiedzialne za dostarczanie danych w postaci
+mini-batchy.
+
+W każdej epoce wykonywane są kolejno następujące kroki:
+\begin{enumerate}
+    \item pobranie mini-batcha danych treningowych,
+    \item wykonanie propagacji w przód,
+    \item obliczenie wartości funkcji kosztu,
+    \item obliczenie gradientu funkcji kosztu względem wyjścia modelu,
+    \item wykonanie propagacji wstecznej,
+    \item aktualizacja parametrów modelu przez optymalizator,
+    \item obliczenie metryk dla zbioru treningowego oraz opcjonalnie
+    walidacyjnego i testowego.
+\end{enumerate}
+
+Dzięki takiemu podziałowi możliwa jest łatwa zmiana funkcji kosztu,
+optymalizatora lub architektury modelu bez konieczności modyfikowania całej
+pętli treningowej.
 
 \subsection{Funkcja kosztu}
 
-\textbf{[DO UZUPEŁNIENIA: opis zastosowanej funkcji kosztu oraz fragment kodu źródłowego]}
+W problemie klasyfikacji wieloklasowej zastosowano funkcję kosztu
+\texttt{Cross Entropy Loss}. Model zwraca wartości typu \textit{logits},
+czyli surowe wyjścia ostatniej warstwy. Wartości te są następnie
+przekształcane za pomocą funkcji \texttt{softmax} do postaci
+prawdopodobieństw przynależności do poszczególnych klas.
+
+Funkcja \texttt{softmax} dla klasy \(j\) ma postać:
+
+\[
+    p_j =
+    \frac{e^{z_j}}
+    {\sum_{k=1}^{K} e^{z_k}}
+\]
+
+gdzie \(z_j\) oznacza wartość logit dla klasy \(j\), natomiast \(K\) oznacza
+liczbę klas.
+
+Dla pojedynczej próbki funkcja kosztu \texttt{Cross Entropy Loss} może być
+zapisana jako:
+
+\[
+    L = -\log(p_y)
+\]
+
+gdzie \(p_y\) oznacza prawdopodobieństwo przypisane przez model do poprawnej
+klasy. Dla całego batcha uśredniona funkcja kosztu ma postać:
+
+\[
+    L =
+    -\frac{1}{m}
+    \sum_{i=1}^{m}
+    \log(p_{i, y_i})
+\]
+
+gdzie \(m\) oznacza liczbę próbek w batchu, a \(y_i\) poprawną etykietę
+klasy dla próbki \(i\).
+
+
+\begin{lstlisting}[language=Python, caption={Fragment implementacji funkcji Cross Entropy Loss.}, label={lst:loss}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
+class CrossEntropyLoss:
+    def loss(self, logits: FloatArray, y_true: IntArray) -> float:
+        probabilities = softmax(logits)
+
+        batch_size = logits.shape[0]
+
+        correct_probabilities = probabilities[
+            np.arange(batch_size),
+            y_true,
+        ]
+
+        correct_probabilities = np.clip(
+            correct_probabilities,
+            1e-15,
+            1.0,
+        )
+
+        return float(-np.mean(np.log(correct_probabilities)))
+
+    def derivative(self, logits: FloatArray, y_true: IntArray) -> FloatArray:
+        probabilities = softmax(logits)
+
+        batch_size = logits.shape[0]
+
+        probabilities[np.arange(batch_size), y_true] -= 1
+        probabilities /= batch_size
+
+        return probabilities
+\end{lstlisting}
+
+W metodzie \texttt{derivative} wykorzystano uproszczoną postać gradientu dla
+połączenia funkcji \texttt{softmax} oraz \texttt{Cross Entropy Loss}. Dzięki
+temu gradient przekazywany do propagacji wstecznej ma prostą postać różnicy
+pomiędzy przewidywanym rozkładem prawdopodobieństwa a poprawną klasą.
 
 \subsection{Parametry uczenia}
 
-\textbf{[DO UZUPEŁNIENIA: learning rate, batch size, liczba epok i pozostałe parametry uczenia]}
+Podczas uczenia modelu wykorzystano następujące parametry:
+\begin{itemize}
+    \item współczynnik uczenia: \(\eta = 0.01\),
+    \item rozmiar mini-batcha: \(16\),
+    \item liczba epok: \(1000\),
+    \item optymalizator: \texttt{Stochastic Gradient Descent},
+    \item funkcja kosztu: \texttt{Cross Entropy Loss},
+    \item ziarno generatora liczb losowych: \texttt{random\_state = 42}.
+\end{itemize}
+
+Współczynnik uczenia określa, jak duży krok wykonywany jest podczas
+aktualizacji parametrów modelu. Zbyt duża wartość może powodować niestabilne
+uczenie, natomiast zbyt mała może znacząco wydłużyć proces dopasowywania
+modelu.
+
+Rozmiar mini-batcha określa liczbę próbek przetwarzanych jednocześnie
+podczas jednej aktualizacji parametrów.
 
 \subsection{Przebieg pojedynczej epoki}
 
-\textbf{[DO UZUPEŁNIENIA: opis przebiegu pojedynczej epoki uczenia oraz fragment kodu źródłowego]}
+Pojedyncza epoka oznacza jednokrotne przejście przez cały zbiór treningowy.
+Dane treningowe są dzielone na mini-batche za pomocą klasy
+\texttt{BatchLoader}. Dla każdego mini-batcha wykonywana jest propagacja
+w przód, obliczenie funkcji kosztu, propagacja wsteczna oraz aktualizacja
+parametrów.
+
+Wartość funkcji kosztu dla epoki jest liczona jako średnia ważona po
+wszystkich mini-batchach. Predykcje oraz prawdziwe etykiety są zapisywane
+dla całej epoki, a następnie wykorzystywane do obliczenia metryk
+klasyfikacyjnych, takich jak accuracy, sensitivity, specificity oraz
+macierz pomyłek.
 
 \subsection{Zapis historii błędu}
 
-\textbf{[DO UZUPEŁNIENIA: opis sposobu zapisywania wartości błędu podczas uczenia]}
+Po zakończeniu każdej epoki tworzony jest obiekt klasy \texttt{EpochStats},
+który przechowuje numer epoki oraz metryki obliczone dla zbioru
+treningowego, walidacyjnego i testowego. Wszystkie obiekty tego typu są
+dodawane do listy \texttt{history} znajdującej się w klasie \texttt{Trainer}.
+
+
+Dzięki temu po zakończeniu uczenia możliwa jest analiza zmian wartości
+funkcji kosztu oraz metryk jakości modelu w kolejnych epokach.

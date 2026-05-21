@@ -1,27 +1,333 @@
 \section{Implementacja sieci neuronowej}
 
-\textbf{[DO UZUPEŁNIENIA: opis implementacji sieci neuronowej]}
+Implementacja sieci neuronowej została podzielona na 6 mniejszych komponentów by utrzymać czytelność i modularność kodu, oraz by ułatwić dodawanie nowych komponentów w przyszłości.
 
-\subsection{Warstwa gęsta}
+Moduł \texttt{neural\_network} dzieli się na:
+\begin{itemize}
+    \item \texttt{activations.py} - Definiuje klasę która służy za szablon funkcji aktywacji. Dotychczas zdefiniowane funkcje aktywacji to, \texttt{Relu}, funkcja sigmoidalna i funkcja liniowa. 
+    \item \texttt{losses.py} - Definiuje funkcje strat, \texttt{Mean squared error} i \texttt{Cross Entropy Loss}.
+    \item \texttt{metrics.py} - Definiuje metryki oceny modelu w postaci funkcji, jak i struktórę (\texttt{@dataclass ClassificationMetrics}) która je przechowuje. 
+    \item \texttt{mlp.py} - Definiuje Klasę \texttt{MultiLayerPerceptron}, rreprezentującą wielowarstową sieć neuronową, składającą się z warstw fully connected.
+    \item \texttt{optimizers.py} - Definuje optymalizator \texttt{Stochastic Gradient Descent}. 
+    \item \texttt{layers.py} - Definiuje warstwe \texttt{Fully connected}.
+\end{itemize}
 
-\textbf{[DO UZUPEŁNIENIA: opis klasy \texttt{DenseLayer} oraz fragment kodu źródłowego]}
+\subsection{Warstwa Fully connected}
+
+Warstwa \texttt{Fully connected}, nazywana również \textit{Dense layer}, 
+jest podstawowym elementem klasycznej sieci wielowarstwowej typu MLP. 
+Każdy neuron tej warstwy jest połączony ze wszystkimi wyjściami warstwy poprzedniej.
+Oznacza to, że każda cecha wejściowa bierze udział w wyznaczaniu wartości każdego neuronu warstwy następnej.
+
+W implementacji warstwa ta została zdefiniowana w pliku
+\texttt{layers.py}. Klasa reprezentująca warstwę przechowuje liczbę wejść,
+liczbę wyjść, macierz wag, wektor biasów oraz funkcję aktywacji przypisaną
+do danej warstwy. Parametry warstwy są inicjalizowane podczas tworzenia
+obiektu.
+
+Dla pojedynczej warstwy część liniową obliczeń można zapisać w postaci:
+
+\[
+    Z = XW + b
+\]
+
+Wartości \(Z\) są następnie przekazywane do funkcji aktywacji.
+
+gdzie:
+\begin{itemize}
+    \item \(X\) oznacza macierz danych wejściowych o wymiarach
+    \((m, n_{in})\),
+    \item \(W\) oznacza macierz wag o wymiarach
+    \((n_{in}, n_{out})\),
+    \item \(b\) oznacza wektor biasów o wymiarze \((n_{out})\),
+    \item \(Z\) oznacza wynik transformacji liniowej,
+    \item \(m\) oznacza liczbę próbek w batchu,
+    \item \(n_{in}\) oznacza liczbę wejść warstwy,
+    \item \(n_{out}\) oznacza liczbę neuronów wyjściowych warstwy.
+\end{itemize}
 
 \subsection{Funkcje aktywacji}
 
-\textbf{[DO UZUPEŁNIENIA: opis zastosowanych funkcji aktywacji oraz fragment kodu źródłowego]}
+Funkcje aktywacji odpowiadają za wprowadzenie nieliniowości do sieci
+neuronowej. Gdyby kolejne warstwy składały się wyłącznie z przekształceń
+liniowych, cała sieć, niezależnie od liczby warstw, nadal mogłaby zostać
+sprowadzona do jednego przekształcenia liniowego.
 
-\subsection{Model wielowarstwowego perceptronu}
+W projekcie funkcje aktywacji zostały zaimplementowane w pliku
+\texttt{activations.py}. Każda aktywacja jest reprezentowana przez obiekt
+klasy \texttt{Activation}, który przechowuje nazwę funkcji, samą funkcję oraz
+jej pochodną. Pochodna jest potrzebna podczas propagacji wstecznej.
 
-\textbf{[DO UZUPEŁNIENIA: opis klasy \texttt{MultiLayerPerceptron} oraz fragment kodu źródłowego]}
+Zaimplementowano trzy funkcje aktywacji:
+\begin{itemize}
+    \item \texttt{ReLU} - stosowaną głównie w warstwach ukrytych
+    \item funkcję sigmoidalną - zwracającą wartości z przedziału \((0, 1)\)
+    \item funkcję liniową - używaną między innymi w warstwie wyjściowej
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={Fragment implementacji klasy reprezentującej funkcję aktywacji.}, label={lst:activations}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
+ActivationFunction = Callable[[FloatArray], FloatArray]
+
+@dataclass
+class Activation:
+    name: str
+    function: ActivationFunction
+    derivative: ActivationFunction
+
+    def __call__(self, x: FloatArray) -> FloatArray:
+        return self.function(x)
+\end{lstlisting}
+
+\subsection{Architektura modelu MLP}
+
+Model wielowarstwowego perceptronu został zaimplementowany w klasie
+\texttt{MultiLayerPerceptron}, znajdującej się w pliku \texttt{mlp.py}.
+Klasa ta odpowiada za utworzenie sekwencji warstw \texttt{DenseLayer} oraz
+za przekazywanie danych przez kolejne warstwy sieci.
+
+Architektura modelu jest definiowana za pomocą listy rozmiarów warstw.
+Pierwszy element listy określa liczbę cech wejściowych, ostatni element
+określa liczbę neuronów wyjściowych, natomiast wartości pośrednie opisują
+liczbę neuronów w warstwach ukrytych.\\ Przykładowy zapi sieci składającej się z trzech warstw fully connected:
+
+\[
+    13 \rightarrow 13 \rightarrow 8 \rightarrow 3
+\]
+
+\begin{lstlisting}[language=Python]
+model = MultiLayerPerceptron([13, 13, 8, 3])
+\end{lstlisting}
+
+\vspace{5mm}
+
+W tym przypadku model przyjmuje dane wejściowe złożone z 13 cech,
+następnie przetwarza je przez dwie warstwy ukryte zawierające odpowiednio
+13 i 8 neuronów, a na końcu zwraca wektor o długości 3, odpowiadający
+liczbie klas w problemie klasyfikacji.
+
+Podczas inicjalizacji modelu liczba warstw jest wyznaczana na podstawie
+długości listy \texttt{layer\_sizes}. Dla każdej pary kolejnych wartości
+tworzony jest jeden obiekt klasy \texttt{DenseLayer}. Oznacza to, że dla
+listy o długości \(n\) powstaje \(n-1\) warstw z wagami.
+
+Model umożliwia również przekazanie listy funkcji aktywacji. Liczba funkcji
+aktywacji musi być zgodna z liczbą warstw. Jeżeli lista aktywacji nie
+zostanie podana, domyślnie w warstwach ukrytych wykorzystywana jest funkcja
+\texttt{ReLU}, natomiast w ostatniej warstwie funkcja liniowa.
+
 
 \subsection{Propagacja w przód}
 
-\textbf{[DO UZUPEŁNIENIA: opis propagacji w przód oraz fragment kodu źródłowego]}
+\begin{flushleft}
+Propagacja w przód (\textit{forward propagation}) polega na przekazaniu
+danych wejściowych przez kolejne warstwy sieci neuronowej w celu wyznaczenia
+wyniku modelu. W zaimplementowanej sieci MLP dane są przetwarzane
+sekwencyjnie przez wszystkie warstwy \texttt{DenseLayer} znajdujące się
+w liście \texttt{layers}.
+\end{flushleft}
+
+Dla pojedynczej warstwy wynik obliczany jest według zależności:
+
+\[
+    A = f(XW + b)
+\]
+
+\begin{flushleft}
+gdzie \(X\) oznacza dane wejściowe do warstwy, \(W\) macierz wag,
+\(b\) wektor biasów, a \(f\) funkcję aktywacji przypisaną do danej warstwy.
+
+W przypadku całego modelu wyjście jednej warstwy staje się wejściem warstwy
+następnej. Dla sieci składającej się z kilku warstw można to zapisać jako:
+\end{flushleft}
+
+\[
+    A^{(1)} = f^{(1)}(XW^{(1)} + b^{(1)})
+\]
+
+\[
+    A^{(2)} = f^{(2)}(A^{(1)}W^{(2)} + b^{(2)})
+\]
+
+\[
+    \ldots
+\]
+
+\[
+    \hat{Y} = A^{(L)}
+\]
+
+gdzie \(L\) oznacza liczbę warstw modelu, a \(\hat{Y}\) jest wynikiem
+zwracanym przez sieć.
+
+\begin{flushleft}
+W implementacji propagacja w przód została zrealizowana w metodzie
+\texttt{forward} klasy \texttt{MultiLayerPerceptron}. Metoda przechodzi po
+kolejnych warstwach modelu i aktualizuje zmienną \texttt{x}, przekazując
+wynik poprzedniej warstwy do następnej.
+\end{flushleft}
+
+\begin{lstlisting}[language=Python, caption={Fragment kodu pokazujący definicje propagacji w przód dla całej sieci.}, label={lst:forward}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
+def forward(self, x: FloatArray) -> FloatArray:
+    for layer in self.layers:
+        x = layer(x)
+
+    return x
+\end{lstlisting}
+
+\break
+
+\begin{flushleft}
+W projekcie dane wejściowe przekazywane do modelu mają postać batcha, czyli
+macierzy o wymiarach:
+
+\[
+    (m, n_{in})
+\]
+
+gdzie \(m\) oznacza liczbę próbek w batchu, a \(n_{in}\) liczbę cech
+wejściowych. Dla zbioru Wine liczba cech wejściowych wynosi 13, dlatego
+przykładowy batch składający się z 16 próbek będzie miał wymiar:
+
+\[
+    (16, 13)
+\]
+
+Wyjściem modelu w problemie klasyfikacji wieloklasowej jest macierz o wymiarach:
+
+\[
+    (m, n_{classes})
+\]
+
+W przypadku zbioru Wine, gdzie występują 3 klasy, wyjście modelu dla batcha 16 próbek ma wymiar:
+
+\[
+    (16, 3)
+\]
+
+Wartości te są następnie przekazywane do funkcji straty, która porównuje
+wynik modelu z prawdziwymi etykietami klas.
+\end{flushleft}
 
 \subsection{Propagacja wsteczna}
 
-\textbf{[DO UZUPEŁNIENIA: opis propagacji wstecznej oraz fragment kodu źródłowego]}
+Propagacja wsteczna (\textit{backpropagation}) służy do wyznaczenia
+gradientów funkcji straty względem parametrów modelu. Gradienty te są
+następnie wykorzystywane przez optymalizator do aktualizacji wag i biasów.
+
+Podstawą propagacji wstecznej jest reguła łańcuchowa. Jeżeli dana wielkość
+\(L\) zależy od \(a\), a \(a\) zależy od \(z\), to pochodną \(L\) względem
+\(z\) można zapisać jako:
+
+\[
+    \frac{\partial L}{\partial z}
+    =
+    \frac{\partial L}{\partial a}
+    \cdot
+    \frac{\partial a}{\partial z}
+\]
+
+Dla pojedynczej warstwy sieci:
+
+\[
+    z = XW + b
+\]
+
+\[
+    a = f(z)
+\]
+
+gradient względem wartości przed aktywacją wynosi:
+
+\[
+    \frac{\partial L}{\partial z}
+    =
+    \frac{\partial L}{\partial a}
+    \cdot
+    f'(z)
+\]
+
+
+Następnie obliczane są gradienty względem parametrów warstwy:
+
+\[
+    \frac{\partial L}{\partial W}
+    =
+    X^T
+    \frac{\partial L}{\partial z}
+\]
+
+\[
+    \frac{\partial L}{\partial b}
+    =
+    \sum_{i=1}^{m}
+    \frac{\partial L}{\partial z_i}
+\]
+
+oraz gradient przekazywany do poprzedniej warstwy:
+
+\[
+    \frac{\partial L}{\partial X}
+    =
+    \frac{\partial L}{\partial z}
+    W^T
+\]
+
+W implementacji każda warstwa posiada metodę \texttt{backward}, która
+oblicza powyższe gradienty i zwraca gradient względem swojego wejścia.
+W klasie \texttt{MultiLayerPerceptron} propagacja wsteczna polega na
+przejściu przez warstwy w odwrotnej kolejności:
+
+\begin{lstlisting}[language=Python, caption={Fragment kodu pokazujący definicje propagacji wstecz dla całej sieci.}, label={lst:backward}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
+def backward(self, d_output: FloatArray) -> FloatArray:
+    gradient = d_output
+
+    for layer in reversed(self.layers):
+        gradient = layer.backward(gradient)
+
+    return gradient
+\end{lstlisting}
+
+Dzięki temu gradient funkcji straty jest przekazywany od warstwy wyjściowej
+do pierwszej warstwy modelu.
 
 \subsection{Aktualizacja parametrów}
 
-\textbf{[DO UZUPEŁNIENIA: opis aktualizacji wag i biasów oraz fragment kodu źródłowego]}
+Po obliczeniu gradientów w procesie propagacji wstecznej następuje
+aktualizacja parametrów modelu. W projekcie zaimplementowano optymalizator
+\texttt{Stochastic Gradient Descent} znajdujący się w pliku
+\texttt{optimizers.py}.
+
+\noindent 
+Dla parametru \(\theta\), którym może być zarówno waga \(W\), jak i bias
+\(b\), aktualizacja ma postać:
+
+\[
+    \theta =
+    \theta - \eta \frac{\partial L}{\partial \theta}
+\]
+
+\noindent 
+gdzie:
+\begin{itemize}
+    \item \(\theta\) oznacza aktualizowany parametr,
+    \item \(\eta\) oznacza współczynnik uczenia,
+    \item \(\frac{\partial L}{\partial \theta}\) oznacza gradient funkcji
+    straty względem danego parametru.
+\end{itemize}
+
+\break
+
+\begin{lstlisting}[language=Python, caption={Fragment kodu pokazujący definicje aktualizacji parametrów dla całej sieci.}, label={lst:backward}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
+def step(self, model: MultiLayerPerceptron) -> None:
+    for layer in model.layers:
+        if layer.d_weights is None or layer.d_biases is None:
+            raise RuntimeError("Cannot update before backward")
+
+        layer.weights -= self.learning_rate * layer.d_weights
+        layer.biases -= self.learning_rate * layer.d_biases
+\end{lstlisting}
+
+Optymalizator przechodzi przez wszystkie warstwy modelu i aktualizuje ich
+parametry na podstawie gradientów zapisanych podczas propagacji wstecznej.
+Sprawdzenie, czy gradienty istnieją, zabezpiecza przed próbą aktualizacji
+parametrów przed wykonaniem metody \texttt{backward}.

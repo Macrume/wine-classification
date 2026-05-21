@@ -91,8 +91,10 @@ class MultiLayerPerceptron:
             Gradient of the loss with respect to the model input.
         """
         gradient = d_output
+        
         for layer in reversed(self.layers):
             gradient = layer.backward(gradient)
+            
         return gradient
     
 

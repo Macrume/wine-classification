@@ -1,3 +1,76 @@
 \section{Podsumowanie}
 
-\textbf{[DO UZUPEŁNIENIA: końcowe podsumowanie etapu drugiego]}
+W ramach drugiego etapu projektu zaimplementowano od podstaw wielowarstwową
+sieć neuronową typu MLP przeznaczoną do klasyfikacji próbek ze zbioru Wine.
+Implementacja została podzielona na niezależne moduły odpowiedzialne między
+innymi za warstwy sieci, funkcje aktywacji, funkcje kosztu, metryki,
+optymalizator oraz przebieg procesu uczenia. Taki podział pozwolił zachować
+czytelność kodu oraz ułatwia dalszą rozbudowę projektu, na przykład przez
+dodanie nowych funkcji aktywacji lub innych algorytmów optymalizacji.
+
+Zastosowana w eksperymencie architektura sieci miała postać:
+
+\[
+    13 \rightarrow 13 \rightarrow 8 \rightarrow 3
+\]
+
+gdzie 13 neuronów wejściowych odpowiada liczbie cech opisujących próbkę
+wina, natomiast 3 neurony wyjściowe odpowiadają trzem klasom decyzyjnym.
+Strukturę modelu przedstawiono w tabeli \ref{tab:model_architecture}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \hline
+        Warstwa & Liczba wejść & Liczba neuronów & Funkcja aktywacji \\
+        \hline
+        Wejściowa & 13 & -- & -- \\
+        Ukryta 1 & 13 & 13 & ReLU \\
+        Ukryta 2 & 13 & 8 & ReLU \\
+        Wyjściowa & 8 & 3 & Liniowa \\
+        \hline
+    \end{tabular}
+    \caption{Architektura zastosowanego modelu MLP}
+    \label{tab:model_architecture}
+\end{table}
+
+W warstwach ukrytych zastosowano funkcję aktywacji ReLU, natomiast w warstwie
+wyjściowej zastosowano funkcję liniową. Wynika to z faktu, że model zwracał
+wartości typu \textit{logits}, które następnie były przekazywane do funkcji
+kosztu \texttt{Cross Entropy Loss}. Funkcja ta wewnętrznie wykorzystuje
+operację \texttt{softmax}, dlatego nie było konieczne stosowanie softmaxa
+jako osobnej funkcji aktywacji ostatniej warstwy.
+
+Proces uczenia przeprowadzono z wykorzystaniem następujących parametrów:
+
+\begin{itemize}
+    \item funkcja kosztu: \texttt{Cross Entropy Loss},
+    \item optymalizator: \texttt{Stochastic Gradient Descent},
+    \item współczynnik uczenia: \(\eta = 0.01\),
+    \item rozmiar mini-batcha: \(16\),
+    \item liczba epok: \(1000\),
+    \item podział danych: \(80\%\) zbiór treningowy oraz \(20\%\) zbiór testowy,
+    \item ziarno generatora liczb losowych: \texttt{random\_state = 42}.
+\end{itemize}
+\vspace{5mm}
+Na podstawie uzyskanych wyników można stwierdzić, że model skutecznie nauczył
+się rozróżniać klasy występujące w zbiorze Wine. 
+\vspace{5mm}
+Tak dobry wynik należy interpretować ostrożnie. Zbiór Wine jest
+stosunkowo mały, a jego klasy są dobrze separowalne na podstawie
+dostępnych cech. W celu pełniejszej oceny stabilności modelu należałoby przeprowadzić dodatkowe
+eksperymenty, na przykład dla kilku różnych wartości \texttt{random\_state}
+lub z wykorzystaniem walidacji krzyżowej, lub przetestować model na większym zbiorze który 
+nie byłby tak dobrze separowalny.
+\vspace{5mm}
+Zbiór testowy został wykorzystany do porównania
+przebiegu funkcji kosztu względem zbioru treningowego, jednak nie był używany
+do dostrajania parametrów modelu. Parametry takie jak architektura sieci,
+liczba epok, współczynnik uczenia oraz rozmiar mini-batcha nie były dobierane
+na podstawie wyników uzyskanych na zbiorze testowym.
+\vspace{5mm}
+W sprawozdaniu przedstawiono również metryki sensitivity oraz specificity,
+obliczone osobno dla każdej klasy w podejściu one-vs-rest.
+Uzyskane wysokie wartości tych metryk potwierdzają, że model
+dobrze rozpoznaje próbki należące do poszczególnych klas oraz skutecznie
+odrzuca próbki należące do klas pozostałych.

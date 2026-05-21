@@ -1,23 +1,29 @@
 \section{Implementacja przygotowania danych}
 
-Przygotowano moduł odpowiedzialny za wczytanie danych, rozdzielenie cech wejściowych i etykiet, wykonanie podziału na zbiory uczące oraz standaryzację danych.
+Przygotowano moduł \texttt{data} definujący:
+\begin{itemize}
+ \item Struktury przechowujące zbiór danych, i podzbiory treningowy, testowy, i walidacyjny (\texttt{@dataclass Dataset}, \texttt{@dataclass DatasetSplit}).
+ \item Klasę odpowiedzialną za obsługę przetwarzania danych (\texttt{TabularDataLoader}).
+ \item Iterator serwujący kolejne porcje zbioru danych w batchach (\texttt{BatchLoader}).
+ \item Funkcje pomocnicze wykorzystywane przez powyższe klasy, wydzielone do osobnych plików, by zachować czytelność kodu.
+\end{itemize}
 
-Zastosowane rozwiązanie zostało zaimplementowane w pliku \texttt{Code/scripts/dataloader.py}. Wydzielenie obsługi danych do osobnego modułu pozwala oddzielić etap przygotowania danych od implementacji samej sieci neuronowej. Dzięki temu kod modelu może korzystać z gotowych tablic cech i etykiet, bez konieczności bezpośredniego odczytywania pliku CSV.
+Zastosowane rozwiązanie zostało zaimplementowane w folderze \texttt{Code/scripts/data/}. 
 
 \subsection{Wczytywanie zbioru danych}
 
-Dane wejściowe są wczytywane z pliku CSV za pomocą funkcji \texttt{load\_wine\_dataset}. Funkcja przyjmuje ścieżkę do pliku z danymi oraz parametry określające proporcje podziału na zbiory treningowy, walidacyjny i testowy.
+Dane wejściowe są wczytywane z pliku CSV za pomocą funkcji \texttt{load\_wine\_dataset}. Funkcja przyjmuje ścieżkę do pliku z danymi, parametry określające proporcje podziału na zbiory treningowy, testowy i walidacyjny oraz nazwy cech i ziarno generatora liczb losowych.
 
 \begin{lstlisting}[language=Python, caption={Fragment funkcji wczytującej dane ze zbioru Wine.}, label={lst:load_wine_dataset_basic}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
-df = pd.read_csv(data_path, header=None)
-
-# Pierwsza kolumna zawiera etykiety klas
-# pozostale kolumny zawieraja cechy wejsciowe
-y_raw = df.iloc[:, 0].to_numpy(dtype=np.int64)
-x_raw = df.iloc[:, 1:].to_numpy(dtype=np.float64)
+def load_wine_dataset(
+    data_path: str | Path,
+    train_size: float = 0.8,
+    test_size: float = 0.2,
+    val_size: float = 0,
+    feature_names_path: str | Path | None = None,
+    random_state: int = 42
+) -> DatasetSplit
 \end{lstlisting}
-
-Takie rozwiązanie jest zgodne ze strukturą zbioru Wine.
 
 \subsection{Podział na cechy wejściowe i etykiety}
 
@@ -28,30 +34,35 @@ Po wczytaniu pliku dane są dzielone na macierz cech wejściowych $X$ oraz wekto
 Oryginalne etykiety klas w zbiorze Wine są zapisane jako wartości $1$, $2$ i $3$. W implementacji zostały one przemapowane na zakres $0$, $1$, $2$. Takie kodowanie jest wygodniejsze, ponieważ indeks klasy może być bezpośrednio wykorzystany przy obliczaniu funkcji kosztu lub podczas tworzenia reprezentacji \textit{one-hot}
 
 \begin{lstlisting}[language=Python, caption={Mapowanie etykiet klas na numerację od zera.}, label={lst:map_labels}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
-class_labels = sorted(np.unique(y).tolist())
-mapping = {label: index for index, label in enumerate(class_labels)}
-mapped = np.array([mapping[label] for label in y], dtype=np.int64)
-\end{lstlisting}
+def map_labels_to_zero_based(y: IntArray) -> tuple[IntArray, list[int]]:
+    class_labels = sorted(np.unique(y).tolist())
+    mapping = {label: index for index, label in enumerate(class_labels)}
 
-Dla rozważanego zbioru to oznacza: klasa $1$ zostaje zapisana jako $0$, klasa $2$ jako $1$, a klasa $3$ jako $2$.
+    mapped = np.array(
+        [mapping[label] for label in y],
+        dtype=np.int64,
+    )
+
+    return mapped, class_labels
+\end{lstlisting}
 
 \subsection{Podział na zbiory treningowy, walidacyjny i testowy}
 
 W module przygotowania danych zaimplementowano podział stratyfikowany, ponieważ liczebność klas w zbiorze Wine nie jest identyczna. Zastosowanie zwykłego losowego podziału mogłoby spowodować, że jedna z klas byłaby zbyt słabo reprezentowana w zbiorze testowym/walidacyjnym.
 
-Podstawowy wariant funkcji umożliwia podział na zbiór treningowy i testowy. Dodatkowo przewidziano możliwość wydzielenia zbioru walidacyjnego przez ustawienie parametru \texttt{val\_size} > $0$. W testowym uruchomieniu zastosowano proporcje $70\% / 15\% / 15\%$, odpowiednio zbiór: treningowy, walidacyjny i testowy.
+Klasa \texttt{TabularDataLoader} umożliwia wygodne przechowywanie macierzy cech i wektora etykiet, oraz udostępnia funkcję \texttt{split()} zwracającą obiekt klasy \texttt{DatasetSplit} który to przechowuje dataset podzielony na podzbiory: treningowy, testowy i walidacyjny. 
 
 \begin{table}[htbp]
     \centering
-    \caption{Rozmiary zbiorów uzyskane podczas testowego uruchomienia modułu DataLoader.}
+    \caption{Rozmiary zbiorów uzyskane podczas testowego uruchomienia modułu TabularDataLoader.}
     \label{tab:dataloader_split_shapes}
     \begin{tabular}{lcc}
         \toprule
         Zbiór & Kształt macierzy cech & Kształt wektora etykiet \\
         \midrule
-        treningowy & $(125, 13)$ & $(125,)$ \\
-        walidacyjny & $(26, 13)$ & $(26,)$ \\
-        testowy & $(27, 13)$ & $(27,)$ \\
+        treningowy & $(125, 13)$ & $(125)$ \\
+        walidacyjny & $(26, 13)$ & $(26)$ \\
+        testowy & $(27, 13)$ & $(27)$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -60,39 +71,36 @@ Podstawowy wariant funkcji umożliwia podział na zbiór treningowy i testowy. D
 
 Dla każdej cechy obliczana jest średnia $\mu$ oraz odchylenie standardowe $\sigma$. Następnie wartości są przekształcane zgodnie ze wzorem:
 
-\begin{equation}
-    x' = \frac{x - \mu}{\sigma}.
-\end{equation}
+\[
+    x' = \frac{x - \mu}{\sigma}
+\]
 
 Parametry standaryzacji są wyznaczane wyłącznie na podstawie zbioru treningowego. Następnie te same wartości średnich i odchyleń standardowych są stosowane do przeskalowania zbioru walidacyjnego i testowego. Zapobiega to przeciekowi informacji ze zbiorów wykorzystywanych do oceny modelu do etapu uczenia.
 
 \begin{lstlisting}[language=Python, caption={Standaryzacja cech na podstawie zbioru treningowego.}, label={lst:standardization}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
-mean = np.mean(x_train, axis=0)
-std = np.std(x_train, axis=0)
-std[std == 0.0] = 1.0
+def standardize(
+    x_train: FloatArray,
+    x_test: FloatArray,
+    x_val: FloatArray | None = None,
+) -> tuple[FloatArray, FloatArray, FloatArray | None, FloatArray, FloatArray]:
+    mean = np.mean(x_train, axis=0)
+    std = np.std(x_train, axis=0)
 
-x_train_std = (x_train - mean) / std
-x_val_std = (x_val - mean) / std
-x_test_std = (x_test - mean) / std
+    std[std == 0.0] = 1.0
+
+    x_train_std = (x_train - mean) / std
+    x_test_std = (x_test - mean) / std
+
+    x_val_std = None
+    if x_val is not None:
+        x_val_std = (x_val - mean) / std
+
+    return x_train_std, x_test_std, x_val_std, mean, std
 \end{lstlisting}
-
-W implementacji dodano również zabezpieczenie przed dzieleniem przez zero.
 
 \subsection{Generowanie mini-batchy}
 
 Do obsługi danych podczas uczenia przygotowano klasę \texttt{BatchLoader}, której zadaniem jest dzielenie zbioru danych na mniejsze partie - mini-batche. Umożliwia to uczenie sieci na fragmentach danych zamiast przetwarzania całego zbióru treningowego jednocześnie.
 
 Klasa \texttt{BatchLoader} przyjmuje macierz cech, wektor etykiet, rozmiar batcha oraz informację o tym, czy dane mają zostać przetasowane przed rozpoczęciem iteracji. Tasowanie danych jest przydatne w zbiorze treningowym, ponieważ ogranicza wpływ kolejności próbek na przebieg uczenia.
-
-\begin{lstlisting}[language=Python, caption={Zwracanie kolejnych mini-batchy.}, label={lst:batch_loader}, basicstyle=\ttfamily\small, breaklines=true, frame=single]
-for start in range(0, len(indices), self.batch_size):
-    batch_indices = indices[start:start + self.batch_size]
-    yield self.x[batch_indices], self.y[batch_indices]
-\end{lstlisting}
-
-Podczas testowego uruchomienia dla parametru \texttt{batch\_size = 16} pierwszy batch treningowy miał kształt $(16, 13)$ dla macierzy cech oraz $(16,)$ dla wektora etykiet.
-
-\subsection{Testy modułu przygotowania danych}
-
-Poprawność działania modułu sprawdzono za pomocą skryptu \texttt{Code/test\_dataloader.py}. Skrypt wczytuje ścieżkę do zbioru danych ze zmiennej środowiskowej \texttt{WINE\_DATA\_PATH}, uruchamia funkcję \texttt{load\_wine\_dataset}, a następnie wypisuje podstawowe informacje o otrzymanych zbiorach. Dodatkowo sprawdzane jest działanie klasy \texttt{BatchLoader} przez wypisanie kształtu pierwszego batcha treningowego i walidacyjnego.
 
