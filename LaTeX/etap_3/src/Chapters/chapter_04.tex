@@ -1,0 +1,50 @@
+\section{Wyniki optymalizacji}
+
+W tym rozdziale należy przedstawić wyniki uzyskane dla wszystkich
+analizowanych kombinacji architektury i współczynnika uczenia.
+
+\subsection{Przebieg procesu uczenia}
+
+Dla każdej konfiguracji należy przeanalizować przebieg funkcji kosztu
+w kolejnych epokach.
+
+\begin{figure}[H]
+    \centering
+    \fbox{
+        \parbox{0.9\textwidth}{
+            \centering
+            Miejsce na wykresy przebiegu funkcji kosztu dla wszystkich
+            analizowanych konfiguracji lub dla konfiguracji reprezentatywnych.
+        }
+    }
+    \caption{Przebieg funkcji kosztu w procesie uczenia dla wybranych konfiguracji}
+    \label{fig:optimization_loss_curves}
+\end{figure}
+
+\subsection{Porównanie metryk końcowych}
+
+Po zakończeniu treningu dla każdej konfiguracji należy zestawić końcowe
+wartości najważniejszych metryk jakości.
+
+\begin{table}[H]
+    \centering
+    \input{tables/optimization_results_summary.tex}
+    \caption{Zbiorcze porównanie wyników dla analizowanych konfiguracji}
+    \label{tab:optimization_results_summary}
+\end{table}
+
+\subsection{Czułość i specyficzność}
+
+Zgodnie z wymaganiami projektowymi, dla każdej konfiguracji należy przedstawić
+wartości czułości i specyficzności.
+
+\begin{table}[H]
+    \centering
+    \input{tables/sensitivity_specificity_summary.tex}
+    \caption{Czułość i specyficzność dla analizowanych konfiguracji}
+    \label{tab:sensitivity_specificity_summary}
+\end{table}
+
+\subsection{Wybór najlepszej konfiguracji}
+
+

@@ -1,0 +1,48 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{amsopn}
+
+% -----------------PREAMBUŁA-----------------
+\input{preamble/packages.tex}
+\input{preamble/formating.tex}
+\input{preamble/definitions.tex}
+% -------------------------------------------
+
+\title{\ProjectNumber. \ProjectTitle\\\large Sprawozdanie z etapu 3}
+\author{Zespół nr. \TeamNumber \\ \AuthorOne \\ \AuthorTwo}
+\date{}
+
+\begin{document}
+    \begin{titlepage}
+       \maketitle
+
+       \vfill
+
+       \begin{center}
+            \large
+            Kod źródłowy projektu jest dostępny w repozytorium:\\[0.3cm]
+            \href{\RepositoryURL}{\texttt{\RepositoryURL}}\\[0.6cm]
+
+            Wersja kodu wykorzystana do przygotowania sprawozdania:\\[0.3cm]
+            \href{\CommitURL}{\texttt{commit: \CommitHash}}
+       \end{center}
+    \end{titlepage}
+    \clearpage
+
+    \tableofcontents
+    \clearpage
+
+    \listoftables
+    \clearpage
+
+    \listoffigures
+    \clearpage
+
+    \input{Chapters/chapter_01.tex}
+    \input{Chapters/chapter_02.tex}
+    \input{Chapters/chapter_03.tex}
+    \input{Chapters/chapter_04.tex}
+    \input{Chapters/chapter_05.tex}
+
+    \clearpage
+
+\end{document}
