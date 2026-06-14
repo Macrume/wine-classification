@@ -83,7 +83,9 @@ class Trainer:
         epochs: int,
         val_loader: BatchLoader | None = None,
         test_loader: BatchLoader | None = None,
+        train_eval_loader: BatchLoader | None = None,
         print_every: int = 1,
+        eval_every: int = 1,
     ) -> list[EpochStats]:
         """Train the model for a given number of epochs.
 
@@ -93,6 +95,7 @@ class Trainer:
             val_loader: Optional mini-batch loader for the validation set.
             test_loader: Optional mini-batch loader for the test set.
             print_every: Print training statistics every given number of epochs.
+            eval_every: Evaluate model every given number of epochs.
 
         Returns:
             List of ``EpochStats`` objects collected during training.
@@ -102,9 +105,29 @@ class Trainer:
         """
         if epochs <= 0:
             raise ValueError(f"epochs must be positive, got {epochs}")
-        
+
+        if eval_every <= 0:
+            raise ValueError(f"eval_every must be positive, got {eval_every}")
+
+        self.history = []
+
         for epoch in range(1, epochs + 1):
-            train_metrics = self._train_one_epoch(train_loader)
+            self._train_one_epoch(train_loader)
+
+            should_evaluate = (
+                epoch == 1
+                or epoch % eval_every == 0
+                or epoch == epochs
+            )
+
+            if not should_evaluate:
+                continue
+
+            eval_train_loader = train_eval_loader
+            if eval_train_loader is None:
+                eval_train_loader = train_loader
+
+            train_metrics = self.evaluate(eval_train_loader)
 
             val_metrics = None
             if val_loader is not None:

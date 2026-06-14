@@ -77,7 +77,7 @@ def main() -> None:
     history = trainer.fit(
         train_loader=train_loader,
         test_loader=test_loader,
-        epochs=1000,
+        epochs=100000,
         print_every=50,
     )
 
