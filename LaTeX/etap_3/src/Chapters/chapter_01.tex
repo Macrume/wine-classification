@@ -1,0 +1,32 @@
+\section{Konfiguracje eksperymentalne}
+
+W celu optymalizacji struktury sieci oraz algorytmu uczenia przygotowano
+zestaw eksperymentów obejmujący różne architektury MLP oraz różne wartości
+współczynnika uczenia.
+
+\subsection{Analizowane wartości współczynnika uczenia}
+
+W eksperymentach porównywano trzy wartości parametru \textit{learning rate}:
+\begin{itemize}
+    \item \(\eta = 0.001\),
+    \item \(\eta = 0.01\),
+    \item \(\eta = 0.1\).
+\end{itemize}
+
+\subsection{Analizowane struktury sieci}
+
+Przygotowano kilka wariantów architektury sieci MLP różniących się liczbą
+warstw ukrytych oraz liczbą neuronów w każdej z nich.
+
+\begin{table}[H]
+    \centering
+    \input{tables/network_configurations.tex}
+    \caption{Konfiguracje architektur analizowane w etapie trzecim}
+    \label{tab:network_configurations}
+\end{table}
+
+\subsection{Liczba kombinacji eksperymentalnych}
+
+Każda architektura została połączona z każdą analizowaną wartością
+współczynnika uczenia. Dzięki temu możliwe jest bezpośrednie porównanie
+wpływu obu tych czynników na przebieg uczenia i końcową jakość klasyfikacji.

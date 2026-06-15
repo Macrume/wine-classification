@@ -1,0 +1,135 @@
+\section{Wyniki optymalizacji}
+
+W tym rozdziale przedstawiono wyniki uzyskane dla wszystkich analizowanych
+kombinacji architektury sieci oraz współczynnika uczenia. Łącznie przebadano
+18 konfiguracji, wynikających z połączenia 6 struktur sieci MLP oraz 3 wartości
+parametru learning rate. Każda konfiguracja została uruchomiona dla 10 różnych
+wartości ziarna losowości. W tabelach przedstawiono wartości średnie oraz
+odchylenia standardowe uzyskane pomiędzy kolejnymi uruchomieniami.
+
+\subsection{Przebieg procesu uczenia}
+
+Dla każdej konfiguracji przeanalizowano przebieg funkcji kosztu w kolejnych
+epokach. Na wykresach przedstawiono średni przebieg błędu dla zbioru
+treningowego, walidacyjnego i testowego, uśredniony po 10 uruchomieniach.
+
+Najniższa analizowana wartość współczynnika uczenia, \(\eta = 0.001\), okazała się
+zbyt mała dla większości konfiguracji. W wielu przypadkach funkcja kosztu
+malała bardzo wolno, a dla większych struktur sieci pozostawała blisko poziomu
+odpowiadającego klasyfikacji losowej. Szczególnie widoczne było to dla
+konfiguracji głębszych, takich jak
+\(13 \rightarrow 13 \rightarrow 8 \rightarrow 3\),
+\(13 \rightarrow 32 \rightarrow 16 \rightarrow 3\) oraz
+\(13 \rightarrow 64 \rightarrow 32 \rightarrow 16 \rightarrow 3\), które przy
+małym współczynniku uczenia nie osiągnęły satysfakcjonującej zbieżności w
+zadanej liczbie epok.
+
+Dla wartości \(\eta = 0.01\) proces uczenia był znacznie skuteczniejszy w przypadku
+prostszych architektur. Bardzo dobre wyniki uzyskały między innymi konfiguracje
+\(13 \rightarrow 4 \rightarrow 3\), \(13 \rightarrow 8 \rightarrow 3\) oraz
+\(13 \rightarrow 13 \rightarrow 3\). Jednocześnie część głębszych modeli nadal
+uczyła się wolniej, co wskazuje, że dla nich większy współczynnik uczenia był
+korzystniejszy.
+
+Najlepszą ogólną zbieżność uzyskano dla \(\eta = 0.1\). Dla tej wartości błędy
+treningowe, walidacyjne i testowe szybko malały, a końcowe wartości metryk były
+najwyższe dla większości struktur. W szczególności konfiguracja
+\(13 \rightarrow 13 \rightarrow 8 \rightarrow 3\) osiągnęła najlepszą średnią
+wartość macro sensitivity na zbiorze walidacyjnym. Nie zaobserwowano wyraźnego
+rozjechania się przebiegów błędu treningowego i walidacyjnego, co oznacza, że w
+analizowanym zakresie nie wystąpiło silne przeuczenie modelu.Wykres~\ref{fig:optimization_loss_curves} 
+przedstawia przebieg funkcji kosztu dla zbioru treningowego, walidacyjnego
+i testowego w funkcji liczby epok dla najlepszej kombinacji. Analogiczne wykresy
+dla reszty kombinacji zostały umieszczone w repozytorium, w \texttt{Code/artifacts/grid\_search}.
+
+\begin{figure}[H]
+    \centering
+    \fbox{
+        \includegraphics[width=0.95\textwidth]{figures/loss_mean_over_seeds.png}
+    }
+    \caption{Przebieg funkcji kosztu w procesie uczenia dla architektóry \(13 \rightarrow 13 \rightarrow 8 \rightarrow 3\), z \(\eta = 0.1\).}
+    \label{fig:optimization_loss_curves}
+\end{figure}
+\subsection{Porównanie metryk końcowych}
+
+Po zakończeniu treningu dla każdej konfiguracji zestawiono końcowe wartości
+najważniejszych metryk jakości. Wyniki przedstawione w tabeli są wartościami
+średnimi obliczonymi na podstawie 10 uruchomień dla różnych wartości
+\texttt{random\_state}. Jako główne kryterium porównania przyjęto wyniki na
+zbiorze walidacyjnym, ponieważ zbiór testowy powinien służyć przede wszystkim
+do końcowej, niezależnej oceny wybranego modelu.
+
+\begin{table}[H]
+    \centering
+    \input{tables/optimization_results_summary.tex}
+    \caption{Zbiorcze porównanie wyników dla analizowanych konfiguracji}
+    \label{tab:optimization_results_summary}
+\end{table}
+
+Na podstawie uzyskanych wyników można zauważyć, że największy wpływ na jakość
+klasyfikacji miał współczynnik uczenia. Dla \(\eta = 0.001\) średnia wartość macro
+sensitivity na zbiorze walidacyjnym była wyraźnie niższa niż dla pozostałych
+wartości i wyniosła około \(0.5704\). Dla \(\eta = 0.01\) średnia wartość tej metryki
+wzrosła do około \(0.8180\), natomiast dla \(\eta = 0.1\) osiągnęła około \(0.9636\).
+Oznacza to, że w przeprowadzonych eksperymentach największa z analizowanych
+wartości learning rate zapewniała najszybszą i najbardziej stabilną zbieżność.
+
+Najlepszą konfiguracją według średniej wartości macro sensitivity na zbiorze
+walidacyjnym była sieć o strukturze
+\(13 \rightarrow 13 \rightarrow 8 \rightarrow 3\) trenowana z learning rate
+\(\eta = 0.1\). Uzyskała ona średnią walidacyjną wartość macro sensitivity równą
+\(0.9814 \pm 0.0134\) oraz średnią macro specificity równą
+\(0.9905 \pm 0.0066\). Na zbiorze testowym ta sama konfiguracja osiągnęła
+macro sensitivity równą \(0.9708 \pm 0.0244\), macro specificity równą
+\(0.9845 \pm 0.0137\) oraz accuracy równą \(0.9686 \pm 0.0284\).
+
+Warto zauważyć, że najniższą średnią wartość funkcji kosztu na zbiorze
+walidacyjnym uzyskała konfiguracja \(13 \rightarrow 13 \rightarrow 3\) z
+learning rate \(\eta = 0.01\), dla której loss walidacyjny wyniósł
+\(0.0605 \pm 0.0420\). Jej wyniki klasyfikacyjne były również bardzo dobre:
+macro sensitivity na zbiorze walidacyjnym wyniosła \(0.9743 \pm 0.0164\),
+a na zbiorze testowym \(0.9820 \pm 0.0234\). Różnice pomiędzy najlepszymi
+konfiguracjami są więc niewielkie, jednak jako główne kryterium wyboru przyjęto
+macro sensitivity na zbiorze walidacyjnym.
+
+\subsection{Czułość i specyficzność}
+
+Zgodnie z wymaganiami projektowymi, dla każdej konfiguracji przedstawiono
+wartości czułości i specyficzności. Czułość informuje, jaka część obiektów
+należących do danej klasy została poprawnie rozpoznana jako ta klasa.
+Specyficzność określa natomiast, jaka część obiektów nienależących do danej
+klasy została poprawnie odrzucona przez klasyfikator.
+
+\begin{table}[H]
+    \centering
+    \input{tables/sensitivity_specificity_summary.tex}
+    \caption{Czułość i specyficzność dla analizowanych konfiguracji}
+    \label{tab:sensitivity_specificity_summary}
+\end{table}
+
+Dla najlepszych konfiguracji wartości czułości i specyficzności były wysokie
+dla wszystkich klas. Oznacza to, że modele nie ograniczały się do poprawnego
+rozpoznawania tylko jednej dominującej klasy, ale zachowywały dobrą skuteczność
+dla całego problemu wieloklasowego. Najsłabsze konfiguracje, szczególnie przy
+\(\eta = 0.001\), uzyskiwały niskie wartości czułości dla wybranych klas.
+
+Dla wybranej konfiguracji
+\(13 \rightarrow 13 \rightarrow 8 \rightarrow 3\) z \(\eta = 0.1\) średnie wartości
+czułości na zbiorze testowym wyniosły odpowiednio około \(0.9917\), \(0.9429\) oraz
+\(0.9778\) dla klas 0, 1 i 2. Średnie wartości specyficzności dla tych klas
+wyniosły odpowiednio około \(0.9870\), \(0.9857\) oraz \(0.9808\). Wyniki te wskazują,
+że model osiągnął zrównoważoną jakość klasyfikacji.
+
+\subsection{Wybór najlepszej konfiguracji}
+
+Do wyboru najlepszej konfiguracji wykorzystano przede wszystkim średnią wartość
+macro sensitivity na zbiorze walidacyjnym.
+
+Najlepszą konfiguracją okazała się sieć MLP o strukturze
+\(13 \rightarrow 13 \rightarrow 8 \rightarrow 3\) trenowana z learning rate
+\(\eta = 0.1\). Konfiguracja ta uzyskała najwyższą średnią wartość macro
+sensitivity na zbiorze walidacyjnym, równą \(0.9814 \pm 0.0134\), przy bardzo
+wysokiej średniej wartości macro specificity równej \(0.9905 \pm 0.0066\).
+Wyniki na zbiorze testowym potwierdziły dobrą zdolność uogólniania tej
+konfiguracji: macro sensitivity wyniosła \(0.9708 \pm 0.0244\), macro specificity
+równą \(0.9845 \pm 0.0137\), a accuracy \(0.9686 \pm 0.0284\).

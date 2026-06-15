@@ -1,0 +1,51 @@
+\section{Schemat przeprowadzonych eksperymentów}
+
+\subsection{Podział danych}
+
+W eksperymentach wykorzystano zbiór Wine, który został podzielony
+stratyfikowanie na trzy części:
+\begin{itemize}
+    \item zbiór treningowy,
+    \item zbiór walidacyjny,
+    \item zbiór testowy.
+\end{itemize}
+
+\begin{table}[H]
+    \centering
+    \input{tables/data_split_summary.tex}
+    \caption{Schemat podziału danych wykorzystywany w etapie trzecim}
+    \label{tab:data_split_summary}
+\end{table}
+
+\subsection{Schemat porównania konfiguracji}
+
+Dla każdej analizowanej konfiguracji wykonywany jest osobny proces uczenia.
+W trakcie treningu zapisywane są:
+\begin{itemize}
+    \item wartości funkcji kosztu dla kolejnych epok,
+    \item metryki jakości na zbiorze treningowym,
+    \item metryki jakości na zbiorze walidacyjnym,
+    \item metryki jakości na zbiorze testowym.
+\end{itemize}
+
+\subsection{Metryki oceny}
+
+Do oceny jakości modeli wykorzystano następujące metryki:
+\begin{itemize}
+    \item wartość funkcji kosztu,
+    \item accuracy,
+    \item sensitivity liczone osobno dla każdej klasy,
+    \item specificity liczone osobno dla każdej klasy,
+    \item wartości uśrednione \textit{macro sensitivity} i
+    \textit{macro specificity}.
+\end{itemize}
+
+\subsection{Artefakty zapisywane w trakcie eksperymentów}
+
+Dla każdej konfiguracji zapisywane są między innymi:
+\begin{itemize}
+    \item przebieg funkcji kosztu w kolejnych epokach,
+    \item pliki CSV z historią treningu,
+    \item zbiorcze zestawienia wyników końcowych,
+    \item zestawienia średnich i odchyleń standardowych pomiędzy uruchomieniami.
+\end{itemize}

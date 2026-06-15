@@ -1,0 +1,29 @@
+\section{Parametry procesu uczenia}
+
+Poza architekturą i współczynnikiem uczenia pozostałe elementy procesu
+uczenia są utrzymywane na stałym poziomie, aby porównanie konfiguracji było
+miarodajne. Do takich elementów należą:
+\begin{itemize}
+    \item rozmiar mini-batcha,
+    \item liczba epok,
+    \item zastosowana funkcja kosztu,
+    \item zastosowany optymalizator,
+    \item sposób podziału danych i standaryzacji cech.
+\end{itemize}
+
+\subsection{Stałe parametry eksperymentów}
+
+Podczas porównywania konfiguracji wykorzystano następujące ustawienia:
+\begin{itemize}
+    \item funkcja kosztu: \texttt{Cross Entropy Loss},
+    \item optymalizator: \texttt{Stochastic Gradient Descent},
+    \item rozmiar mini-batcha: \(16\),
+    \item liczba epok: \(1000\),
+    \item ewaluacja wykonywana co \(100\) epok.
+\end{itemize}
+
+\subsection{Powtarzanie eksperymentów}
+
+Każda konfiguracja może zostać uruchomiona wielokrotnie dla różnych wartości
+\texttt{random\_state}. Dzięki temu możliwe jest porównanie nie tylko
+pojedynczego wyniku, ale również średnich wartości metryk oraz ich zmienności.
